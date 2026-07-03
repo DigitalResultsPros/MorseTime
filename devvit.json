@@ -1,0 +1,48 @@
+{
+  "name": "morsetime",
+  "post": {
+    "dir": "dist/client",
+    "entrypoints": {
+      "default": {
+        "inline": true,
+        "entry": "splash.html"
+      },
+      "game": {
+        "entry": "game.html"
+      }
+    }
+  },
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Post Today's Frequency",
+        "description": "Create a new daily Morse code challenge post",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/post-frequency"
+      },
+      {
+        "label": "View Subreddit Stats",
+        "description": "View engagement stats for MorseTime",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/view-stats"
+      }
+    ]
+  },
+  "triggers": {
+    "onAppInstall": "/internal/triggers/on-app-install",
+    "dailyFrequency": "/internal/triggers/daily-frequency"
+  },
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  },
+  "dev": {
+    "subreddit": "morsetime_dev"
+  }
+}
