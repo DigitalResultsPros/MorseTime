@@ -35,8 +35,7 @@
     ]
   },
   "triggers": {
-    "onAppInstall": "/internal/triggers/on-app-install",
-    "dailyFrequency": "/internal/triggers/daily-frequency"
+    "onAppInstall": "/internal/triggers/on-app-install"
   },
   "scripts": {
     "dev": "vite build --watch",
