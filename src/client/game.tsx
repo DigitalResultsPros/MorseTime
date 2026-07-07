@@ -163,6 +163,15 @@ export const App = () => {
       const isCorrect = decoded === targetStr;
       setResult(isCorrect ? 'Correct!' : `You sent: ${decoded} (target: ${targetStr})`);
       isPlayingRef.current = false;
+
+      // Spawn particles
+      if (waveformRef.current && canvasRef.current) {
+        const width = canvasRef.current.getBoundingClientRect().width;
+        const x = waveformRef.current.getPlayheadX(width);
+        const height = canvasRef.current.getBoundingClientRect().height;
+        const color = isCorrect ? '#22c55e' : '#ef4444';
+        waveformRef.current.spawnParticles(x, height * 0.5, color, isCorrect ? 20 : 10);
+      }
     }
   }, [userSequence, targetSequence]);
 

@@ -180,6 +180,15 @@ export const Splash = () => {
       setResult(isCorrect ? 'Correct!' : `You sent: ${decoded} (target: ${dailyWord?.word})`);
       setView('result');
 
+      // Spawn particles
+      if (waveformRef.current && canvasRef.current) {
+        const width = canvasRef.current.getBoundingClientRect().width;
+        const x = waveformRef.current.getPlayheadX(width);
+        const height = canvasRef.current.getBoundingClientRect().height;
+        const color = isCorrect ? '#22c55e' : '#ef4444';
+        waveformRef.current.spawnParticles(x, height * 0.5, color, isCorrect ? 20 : 10);
+      }
+
       // Record progress
       progression.recordAttempt(dailyWord?.word ?? '', isCorrect, 0);
       const stats = progression.getStats();
