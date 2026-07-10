@@ -1,12 +1,20 @@
 # Reddit "Games with a Hook" Hackathon — Project Report
 ## Morse Code Audio/Touch Learning Game
 
-**Project Codename:** `CW-TUTOR` (Continuous Wave Tutor)
-**Hackathon:** Reddit's Games with a Hook (June 17 – July 15, 2026)
-**Prize Pool:** $40,000 + $5,000 Phaser Special Award
-**Platform:** Devvit Web (Reddit Developer Platform)
-**Engine:** Phaser 4 + TypeScript + Web Audio API
-**Target:** Grand Prize ($15,000) + Phaser Special Award ($5,000)
+> **HISTORICAL / SUPERSEDED (do not implement as-is)**  
+> Written early as the full vision under codename **CW-TUTOR** with **Phaser**.  
+> **Current product locks:** [../agent/DECISIONS.md](../agent/DECISIONS.md)  
+> **Living UX/GUI:** [../design/ux.md](../design/ux.md), [../design/gui.md](../design/gui.md)  
+> **Actual stack:** React + Canvas 2D + Web Audio + Hono (no Phaser). Brand: **MorseTime**.  
+> Phaser award path and much of the 28-day roadmap are **out of scope**. **Choir** is a **stretch** (not required). Multilingual Morse content is out; UI locale toggle is stretch.  
+> Keep this file for context only.
+
+**Project Codename (historical):** `CW-TUTOR` → shipping name **MorseTime**  
+**Hackathon:** Reddit's Games with a Hook (June 17 – July 15, 2026 era)  
+**Prize Pool:** $40,000 + $5,000 Phaser Special Award  
+**Platform:** Devvit Web (Reddit Developer Platform)  
+**Engine (historical proposal):** Phaser 4 + TypeScript + Web Audio API → **not used**  
+**Target (historical):** Grand Prize + Phaser Special Award → Phaser award **abandoned**
 
 ---
 

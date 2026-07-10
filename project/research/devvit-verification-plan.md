@@ -1,11 +1,16 @@
 # Devvit Verification Plan
 ## MorseTime — Ensuring Accurate Runtime on Reddit
 
-**Goal:** Verify the Morse code timing systems will run with sufficient precision and reliability inside Devvit's serverless iframe environment.
+> **Reference QA checklist** (still useful). Architecture note is current (**no Phaser**).  
+> Timeline rows (“Day 1–2”) are **stale** relative to calendar — use as a checklist, not a schedule.  
+> **Current locks / status:** [../agent/DECISIONS.md](../agent/DECISIONS.md), [../agent/STATUS.md](../agent/STATUS.md)  
+> **Choir:** stretch goal (not required for ship); older “out of scope” wording superseded by `../agent/DECISIONS.md`.
 
-**Architecture:** React 19 + Canvas 2D + Web Audio API (no Phaser)
-**Team Size:** 2+ developers
-**Hackathon Deadline:** July 15, 2026 (13 days from report date)
+**Goal:** Verify Morse timing systems run with sufficient precision and reliability inside Devvit’s serverless iframe environment.
+
+**Architecture:** React 19 + Canvas 2D + Web Audio API (**no Phaser**) — matches repo  
+**Team Size:** Full team available (doc originally said “2+”)  
+**Hackathon deadline:** Confirm with owner; original note was July 15, 2026
 
 ---
 
@@ -86,7 +91,7 @@ console.log(`Actual dit: ${actualDuration * 1000}ms`);
 | 3.5 | Test multi-touch (two fingers) | Only primary pointer counted; no double-registration |
 | 3.6 | Test edge cases: very short tap (< 50ms) | Classified as `dit` (not dropped) |
 | 3.7 | Test edge cases: very long hold (> 3s) | Clamped to `MAX_DAH_MS`; no freeze |
-| 3.8 | Test keyboard input | Space = dit, Enter = dah; no accidental repeats |
+| 3.8 | Test keyboard input | Space **or** Enter both key; **hold duration** = dit/dah; no accidental key-repeat |
 
 **How to run:**
 - Use Devvit playtest on physical devices

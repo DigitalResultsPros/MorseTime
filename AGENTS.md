@@ -1,52 +1,59 @@
-You are writing a Devvit web application that will be executed on Reddit.com.
+# AGENTS.md
 
-## Tech Stack
+You are writing a **Devvit Web** application that runs on Reddit.com (MorseTime).
 
-- **Frontend**: React 19, Tailwind CSS 4, Vite
-- **Backend**: Node.js v22 serverless environment (Devvit), Hono, TRPC
-- **Communication**: tRPC v11 for end-to-end type safety
+## Tech stack (actual)
 
-## Layout & Architecture
+- **Frontend:** React 19, Tailwind CSS 4, Vite, Canvas 2D, Web Audio API
+- **Backend:** Node.js ≥22, Hono (REST-style routes) — **not tRPC** in this repo
+- **Platform:** `@devvit/web` client + server (Redis, Reddit API, context)
+- **No Phaser** — locked; see `project/agent/DECISIONS.md`
 
-- `/src/server`: **Backend Code**. This runs in a secure, serverless environment.
-  - `trpc.ts`: Defines the API router and procedures.
-  - `index.ts`: Main server entry point (Hono app).
-  - Access `redis`, `reddit`, and `context` here via `@devvit/web/server`.
-- `/src/client`: **Frontend Code**. This is executed inside of an iFrame on reddit.com
-  - To add an entrypoint, create a HTML file and add to the mapping inside of `devvit.json`
-  - Entrypoints:
-    - `game.html`: The main React entry point (Expanded View).
-    - `splash.html`: The initial React entry point (Inline View). This will be shown in the reddit.com feed. Please keep it fast and keep heavy dependencies inside of `game.html`
-- `/src/shared`: **Shared Code**. Code to share between the client and server
+## Layout
 
-## Frontend
+- `/src/server` — Hono app (`index.ts`), routes under `routes/` (`api`, `daily`, `progress`, `menu`, `triggers`, `forms`), `core/post.ts`
+- `/src/client` — iframe UI
+  - `splash.html` / `splash.tsx` — inline feed entry (keep light)
+  - `game.html` / `game.tsx` — expanded full game
+  - `systems/` — `AudioEngine`, `TouchInput`, `WaveformViz`, `Progression`
+- `/src/shared` — client/server shared types and Morse/WPM/curriculum logic
+- `/tests` — Vitest unit tests
+- `/project` — product docs (design, ops, research, agent notes)
 
-### Rules
+There is **no** `trpc.ts` in this project. Prefer plain Hono handlers and typed shared types in `src/shared/api.ts`.
 
-- Instead of `window.location` or `window.assign`, use `navigateTo` from `@devvit/web/client`
+## Frontend rules
 
-### Limitations
+- Use `navigateTo` / `requestExpandedMode` from `@devvit/web/client` (not `window.location` assign for Reddit navigation)
+- No `window.alert` — use `showToast` / `showForm` from `@devvit/web/client`
+- No file-download APIs as primary UX; clipboard + toast is fine
+- No geolocation, camera, mic, or notifications web APIs
+- Do not put inline script bodies in HTML entrypoints — use bundled modules
 
-- `window.alert`: Use `showToast` or `showForm` from `@devvit/web/client`
-- File downloads: Use clipboard API with `showToast` to confirm
-- Geolocation, camera, microphone, and notifications web APIs: No alternatives
-- Inline script tags inside of `html` files: Use a script tag and separate js/ts file
+## Input (current code)
+
+- Pointer hold + keyboard **Space or Enter** both start/stop the keyer
+- **Dit vs dah = hold duration**, not which key (fixed ~150ms threshold today; target is WPM-relative — see design docs)
 
 ## Commands
 
-- `npm run type-check`: Check typescript types
-- `npm run lint`: Check the linter
-- `npm run test -- my-file-name`: Run tests isolated to a file
+- `npm run type-check` — TypeScript project references build
+- `npm run lint` — ESLint
+- `npm run test` / `npm run test -- path` — Vitest
+- `npm run dev` — Devvit playtest
+- `npm run build` / `npm run deploy` / `npm run launch` — see root README
 
-## Code Style
+## Code style
 
-- Prefer type aliases over interfaces when writing typescript
+- Prefer type aliases over interfaces
 - Prefer named exports over default exports
-- Never cast typescript types
+- Avoid unnecessary type casts
 
-## Global Rules
+## Global rules
 
-- You may find code that references blocks or `@devvit/public-api` while building a feature. Do NOT use this code as this project is configured to use Devvit web only.
-- Whenever you add an endpoint for a new menu item action, ensure that you've added the corresponding mapping to `devvit.json` so that it is properly registered
+- Devvit **Web only** — do not introduce `@devvit/public-api` blocks patterns
+- New mod menu endpoints must be registered in `devvit.json`
+- Product locks and dual-timeline gameplay: **`project/agent/DECISIONS.md`** and **`project/design/ux.md`**
+- Doc index: **`project/README.md`**
 
-Docs: https://developers.reddit.com/docs/llms.txt.
+Docs: https://developers.reddit.com/docs/llms.txt
