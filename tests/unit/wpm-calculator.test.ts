@@ -4,6 +4,7 @@ import {
   wpmFromDitMs,
   effectiveWpm,
   getStandardParisDurationMs,
+  transmitWpm,
 } from '../../src/shared/wpm';
 import { TIMING_TOLERANCE_MS } from '../fixtures/timing-fixtures';
 
@@ -59,6 +60,21 @@ describe('WPM Calculator', () => {
 
     it('returns 0 for zero duration', () => {
       expect(effectiveWpm(20, 0, 50)).toBe(0);
+    });
+  });
+
+  describe('transmitWpm', () => {
+    it('PARIS (5 letters) in 60s → 1 WPM', () => {
+      assertApprox(transmitWpm(60_000, 5), 1);
+    });
+
+    it('PARIS in 3s → 20 WPM', () => {
+      assertApprox(transmitWpm(3_000, 5), 20);
+    });
+
+    it('returns 0 for invalid inputs', () => {
+      expect(transmitWpm(0, 5)).toBe(0);
+      expect(transmitWpm(1000, 0)).toBe(0);
     });
   });
 });

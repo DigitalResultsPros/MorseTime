@@ -15,7 +15,9 @@ project/
 ├── README.md                 ← you are here
 ├── design/                   living UX / GUI specs
 │   ├── ux.md
-│   └── gui.md
+│   ├── gui.md
+│   ├── new.md              splash daily loop
+│   └── training.md         expanded Training hub
 ├── ops/                      Reddit / mod / runtime ops
 │   └── reddit_guide.md
 ├── research/                 historical or QA reference (not current law)
@@ -39,6 +41,7 @@ project/
 | What’s broken / next | [agent/STATUS.md](./agent/STATUS.md) |
 | How play should feel | [design/ux.md](./design/ux.md) |
 | **New main page (splash) build brief** | [design/new.md](./design/new.md) |
+| **Training hub (expanded) build brief** | [design/training.md](./design/training.md) |
 | How display/audio should look | [design/gui.md](./design/gui.md) |
 | How mods run the app on Reddit | [ops/reddit_guide.md](./ops/reddit_guide.md) |
 | Original hackathon vision (Phaser-era, outdated) | [research/morse-hackathon-report.md](./research/morse-hackathon-report.md) |

@@ -91,6 +91,31 @@ export function getStandardTiming(wpm: number): Timing {
   };
 }
 
+/** ITU standard inter-character gap = 3 units. */
+export const STANDARD_INTER_CHAR_UNITS = 3;
+
+/**
+ * Wide inter-character gap (units of dit) so letter boundaries stay clear
+ * (E vs I vs S). Elements still play at full char WPM (Farnsworth-style).
+ */
+export const WIDE_INTER_CHAR_UNITS = 7;
+
+/**
+ * Standard element timing at `wpm`, with custom inter-character gap in dit units.
+ * Intra-char gaps stay 1 unit; only between-letter silence stretches.
+ */
+export function getTimingWithInterCharUnits(
+  wpm: number,
+  interCharUnits: number = STANDARD_INTER_CHAR_UNITS
+): Timing {
+  const standard = getStandardTiming(wpm);
+  const units = interCharUnits > 0 ? interCharUnits : STANDARD_INTER_CHAR_UNITS;
+  return {
+    ...standard,
+    interCharGapMs: standard.ditMs * units,
+  };
+}
+
 export function calculateFarnsworthTiming(
   charWpm: number,
   effectiveWpm: number
@@ -134,6 +159,11 @@ export function encode(char: string): MorseElement[] {
   return result;
 }
 
+/** Alias for single-character encode (letter-by-letter matching). */
+export function encodeChar(char: string): MorseElement[] {
+  return encode(char);
+}
+
 export function encodeString(str: string): MorseElement[][] {
   return str
     .toUpperCase()
@@ -154,6 +184,61 @@ export function decode(elements: MorseElement[]): string {
 function arraysEqual(a: MorseElement[], b: MorseElement[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
+}
+
+export function isMorseEqual(a: MorseElement[], b: MorseElement[]): boolean {
+  return arraysEqual(a, b);
+}
+
+/** True if `buffer` is a prefix of `target` (including equal). */
+export function isMorsePrefix(buffer: MorseElement[], target: MorseElement[]): boolean {
+  if (buffer.length > target.length) return false;
+  return buffer.every((el, i) => el === target[i]);
+}
+
+export type LetterMatchResult = 'continue' | 'complete' | 'wrong';
+
+/**
+ * Match in-progress keying for one letter.
+ * - complete: exact match
+ * - wrong: not a prefix, or longer than target
+ * - continue: proper prefix, still building
+ */
+export function matchLetterBuffer(
+  buffer: MorseElement[],
+  target: MorseElement[]
+): LetterMatchResult {
+  if (buffer.length === 0) return 'continue';
+  if (buffer.length > target.length) return 'wrong';
+  if (!isMorsePrefix(buffer, target)) return 'wrong';
+  if (buffer.length === target.length) return 'complete';
+  return 'continue';
+}
+
+/**
+ * Dit/dah classification threshold (ms).
+ * Midpoint between 1-unit dit and 3-unit dah at charWpm; fallback 150ms.
+ */
+export function ditDahThresholdMs(charWpm?: number): number {
+  if (charWpm === undefined || charWpm <= 0 || !Number.isFinite(charWpm)) {
+    return 150;
+  }
+  const dit = getDitMs(charWpm);
+  return (dit + 3 * dit) / 2;
+}
+
+/** Display glyphs for live ·/− strip. */
+export function elementsToGlyphs(elements: MorseElement[]): string {
+  return elements.map((el) => (el === 'dit' ? '·' : '−')).join('');
+}
+
+/** Letters only (skip spaces) for letter-by-letter transmit index. */
+export function lettersOnly(word: string): string {
+  return word
+    .toUpperCase()
+    .split('')
+    .filter((ch) => ch !== ' ')
+    .join('');
 }
 
 export function getSequenceDurationMs(

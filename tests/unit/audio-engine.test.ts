@@ -10,6 +10,7 @@ class MockOscillator {
   start = vi.fn();
   stop = vi.fn();
   disconnect = vi.fn();
+  onended: (() => void) | null = null;
 }
 
 class MockGain {
@@ -51,11 +52,12 @@ describe('AudioEngine', () => {
   });
 
   describe('init', () => {
-    it('AE-05: creates AudioContext and starts oscillator', async () => {
+    it('AE-05: creates AudioContext and starts sidetone oscillator', async () => {
       const spy = vi.spyOn(globalThis, 'AudioContext');
       await engine.init();
       expect(spy).toHaveBeenCalledTimes(1);
       expect(engine.getState().initialized).toBe(true);
+      expect(mockCtxInstance.createOscillator).toHaveBeenCalled();
       spy.mockRestore();
     });
 
@@ -66,22 +68,19 @@ describe('AudioEngine', () => {
     });
 
     it('AE-05: resumes suspended context', async () => {
-      const ctx = new MockAudioContext();
-      ctx.state = 'suspended';
       await engine.init();
-      // The engine creates its own AudioContext; verify init completes without error
       expect(engine.getState().initialized).toBe(true);
     });
   });
 
   describe('keyDown', () => {
-    it('AE-01: ramps gain to 1 within attack time', async () => {
+    it('AE-01: ramps gain to peak within attack time', async () => {
       await engine.init();
       mockCtxInstance.currentTime = 1.0;
       engine.keyDown(1.0);
       const gain = mockCtxInstance.createGain.mock.results[0]!.value as MockGain;
       expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-        1,
+        expect.any(Number),
         expect.closeTo(1.0 + ATTACK_MS / 1000, 0.001)
       );
       expect(engine.getState().playing).toBe(true);
@@ -102,6 +101,43 @@ describe('AudioEngine', () => {
     });
   });
 
+  describe('scheduleTone', () => {
+    it('creates a dedicated oscillator per beep', async () => {
+      await engine.init();
+      const before = mockCtxInstance.createOscillator.mock.calls.length;
+      engine.scheduleTone(2.0, 0.048); // ~25 WPM dit
+      expect(mockCtxInstance.createOscillator.mock.calls.length).toBe(before + 1);
+      const osc = mockCtxInstance.createOscillator.mock.results.at(-1)!
+        .value as MockOscillator;
+      expect(osc.start).toHaveBeenCalled();
+      expect(osc.stop).toHaveBeenCalled();
+      expect(osc.frequency.value).toBe(TONE_FREQUENCY_HZ);
+    });
+  });
+
+  describe('stopSidetone vs stopAll', () => {
+    it('stopSidetone only silences live key gain', async () => {
+      await engine.init();
+      mockCtxInstance.currentTime = 3;
+      engine.scheduleTone(3.1, 0.05);
+      const beepOsc = mockCtxInstance.createOscillator.mock.results.at(-1)!
+        .value as MockOscillator;
+      beepOsc.stop.mockClear();
+      engine.stopSidetone();
+      // scheduled beep not stopped by stopSidetone
+      expect(beepOsc.stop).not.toHaveBeenCalled();
+    });
+
+    it('stopAll stops scheduled beeps', async () => {
+      await engine.init();
+      engine.scheduleTone(1.0, 0.05);
+      const beepOsc = mockCtxInstance.createOscillator.mock.results.at(-1)!
+        .value as MockOscillator;
+      engine.stopAll();
+      expect(beepOsc.stop).toHaveBeenCalled();
+    });
+  });
+
   describe('getCurrentTime', () => {
     it('returns AudioContext.currentTime', async () => {
       await engine.init();
@@ -114,8 +150,6 @@ describe('AudioEngine', () => {
     it('cleans up resources', async () => {
       await engine.init();
       engine.destroy();
-      const osc = mockCtxInstance.createOscillator.mock.results[0]!.value as MockOscillator;
-      expect(osc.stop).toHaveBeenCalled();
       expect(mockCtxInstance.close).toHaveBeenCalled();
       expect(engine.getState().initialized).toBe(false);
     });

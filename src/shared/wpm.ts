@@ -28,3 +28,12 @@ export function effectiveWpm(
 export function getStandardParisDurationMs(wpm: number): number {
   return ditMsFromWpm(wpm) * 50;
 }
+
+/**
+ * Effective transmit WPM from wall-clock duration and letter count.
+ * Standard word = 5 characters (PARIS convention).
+ */
+export function transmitWpm(elapsedMs: number, letterCount: number): number {
+  if (elapsedMs <= 0 || letterCount <= 0) return 0;
+  return (letterCount / 5) * (60_000 / elapsedMs);
+}

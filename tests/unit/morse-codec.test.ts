@@ -7,12 +7,21 @@ import {
   getInterCharGapMs,
   getWordGapMs,
   getStandardTiming,
+  getTimingWithInterCharUnits,
+  STANDARD_INTER_CHAR_UNITS,
+  WIDE_INTER_CHAR_UNITS,
   calculateFarnsworthTiming,
   encode,
+  encodeChar,
   encodeString,
   decode,
   getSequenceDurationMs,
   getStringDurationMs,
+  isMorsePrefix,
+  matchLetterBuffer,
+  ditDahThresholdMs,
+  elementsToGlyphs,
+  lettersOnly,
 } from '../../src/shared/morse';
 import { TIMING_TOLERANCE_MS } from '../fixtures/timing-fixtures';
 
@@ -67,6 +76,24 @@ describe('MorseCodec — ITU-R M.1677-1 Timing', () => {
       expect(t.intraCharGapMs).toBeCloseTo(60, 0);
       expect(t.interCharGapMs).toBeCloseTo(180, 0);
       expect(t.wordGapMs).toBeCloseTo(420, 0);
+    });
+  });
+
+  describe('getTimingWithInterCharUnits', () => {
+    it('keeps element speed; stretches inter-char only', () => {
+      const std = getStandardTiming(20);
+      const wide = getTimingWithInterCharUnits(20, WIDE_INTER_CHAR_UNITS);
+      expect(wide.ditMs).toBeCloseTo(std.ditMs, 0);
+      expect(wide.dahMs).toBeCloseTo(std.dahMs, 0);
+      expect(wide.intraCharGapMs).toBeCloseTo(std.intraCharGapMs, 0);
+      expect(wide.interCharGapMs).toBeCloseTo(std.ditMs * WIDE_INTER_CHAR_UNITS, 0);
+      expect(wide.interCharGapMs).toBeGreaterThan(std.interCharGapMs);
+    });
+
+    it('standard units match getStandardTiming', () => {
+      const a = getStandardTiming(20);
+      const b = getTimingWithInterCharUnits(20, STANDARD_INTER_CHAR_UNITS);
+      expect(b.interCharGapMs).toBeCloseTo(a.interCharGapMs, 0);
     });
   });
 });
@@ -150,5 +177,46 @@ describe('MorseCodec — Duration Calculations', () => {
     const chars: MorseElement[][] = [['dit'], [], ['dit']];
     // dit(60) + word gap(420) + dit(60) = 540
     assertApprox(getStringDurationMs(chars, timing20), 540);
+  });
+});
+
+describe('MorseCodec — letter match helpers', () => {
+  it('encodeChar matches encode', () => {
+    expect(encodeChar('R')).toEqual(encode('R'));
+  });
+
+  it('isMorsePrefix accepts proper prefixes', () => {
+    const target = encode('C'); // dah dit dah dit
+    expect(isMorsePrefix([], target)).toBe(true);
+    expect(isMorsePrefix(['dah'], target)).toBe(true);
+    expect(isMorsePrefix(['dah', 'dit'], target)).toBe(true);
+    expect(isMorsePrefix(['dit'], target)).toBe(false);
+  });
+
+  it('matchLetterBuffer: continue / complete / wrong', () => {
+    const target = encode('A'); // dit dah
+    expect(matchLetterBuffer([], target)).toBe('continue');
+    expect(matchLetterBuffer(['dit'], target)).toBe('continue');
+    expect(matchLetterBuffer(['dit', 'dah'], target)).toBe('complete');
+    expect(matchLetterBuffer(['dah'], target)).toBe('wrong');
+    expect(matchLetterBuffer(['dit', 'dah', 'dit'], target)).toBe('wrong');
+  });
+
+  it('ditDahThresholdMs: midpoint at 20 WPM is 120ms', () => {
+    // dit=60, dah=180 → midpoint 120
+    expect(ditDahThresholdMs(20)).toBeCloseTo(120, 0);
+  });
+
+  it('ditDahThresholdMs: fallback 150 when missing', () => {
+    expect(ditDahThresholdMs()).toBe(150);
+    expect(ditDahThresholdMs(0)).toBe(150);
+  });
+
+  it('elementsToGlyphs formats ·/−', () => {
+    expect(elementsToGlyphs(['dit', 'dah', 'dit'])).toBe('·−·');
+  });
+
+  it('lettersOnly strips spaces', () => {
+    expect(lettersOnly('hi there')).toBe('HITHERE');
   });
 });
