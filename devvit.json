@@ -16,6 +16,14 @@
     "dir": "dist/server",
     "entry": "index.cjs"
   },
+  "permissions": {
+    "redis": true,
+    "reddit": {
+      "enable": true,
+      "scope": "moderator",
+      "asUser": ["SUBMIT_COMMENT"]
+    }
+  },
   "menu": {
     "items": [
       {
@@ -24,6 +32,13 @@
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-frequency"
+      },
+      {
+        "label": "Pin / refresh leaderboard",
+        "description": "Create or re-sticky the auto-updating leaderboard comment on this post",
+        "location": "post",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/pin-leaderboard"
       },
       {
         "label": "View Subreddit Stats",

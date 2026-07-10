@@ -7,7 +7,7 @@ Learn Morse code by touch and sound. One daily transmission on Reddit.
 **Stack:** React 19, Tailwind CSS 4, Vite, Hono, Web Audio API, Canvas 2D  
 **Playtest subreddit:** `morsetime_dev` (see `devvit.json`)
 
-**Docs:** [project/README.md](./project/README.md) · **Locks:** [project/agent/DECISIONS.md](./project/agent/DECISIONS.md)
+**Docs:** [project/README.md](./project/README.md) · **Locks:** [project/agent/DECISIONS.md](./project/agent/DECISIONS.md) · **About copy:** [WEB_READ.md](./WEB_READ.md)
 
 ## What it does (shipped / in progress)
 
@@ -15,8 +15,9 @@ Learn Morse code by touch and sound. One daily transmission on Reddit.
 |---------|--------|
 | Daily frequency word (date-hashed, Redis-cached) | Implemented |
 | Inline splash + expanded game entrypoints | Implemented |
-| Web Audio keying + touch/keyboard dit/dah | Implemented (gameplay loop needs dual-timeline fix) |
-| Canvas waveform viz | Implemented (single timeline; two-lane redesign planned) |
+| Splash daily loop (listen → Start → letter key → ms) | Implemented — see `project/design/new.md` |
+| Web Audio keying + touch/keyboard dit/dah | Implemented (WPM-relative threshold on splash) |
+| Canvas waveform viz | Present in codebase; not primary splash UX |
 | Koch curriculum data (10 lessons) | Data + partial client |
 | Progress API (Redis) | Implemented but keyed by `postId` (not per-user yet) |
 | Mod menu: post frequency, stats placeholder | Implemented |

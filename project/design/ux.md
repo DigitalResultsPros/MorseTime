@@ -4,53 +4,53 @@
 **Status:** Dual-timeline gameplay locked (2026-07-10).  
 **See also:** [../agent/DECISIONS.md](../agent/DECISIONS.md) · [gui.md](./gui.md) · [../README.md](../README.md)
 
-**Code reality check (2026-07-10):** Splash/game still use a **shared playhead** and often accept input only during target playback. This doc is the **target** behavior, not a claim that code already matches.
+**Code reality check (2026-07-10):** **Splash** implements the loop in [new.md](./new.md). Expanded `game.tsx` may still use older shared-playhead behavior until updated.
 
 ---
 
 ## 1. Current flow vs. target flow
 
-| | Current (broken) | Target (ship) |
+| | Old (broken) | Splash target (shipped intent — new.md) |
 |--|------------------|---------------|
-| Model | Tap **along with** target playhead (shared clock) | **Listen**, then **transmit** on a **new timeline** |
-| Input | Only while target audio plays | Disabled during listen; enabled in transmit |
-| Display | One lane; user marks on target time axis | **Two lanes**: Target / You |
-| Score | End when element counts match | Sequence match after transmit ends |
-| Word | Plaintext shown on splash | **Hidden until result** (default) |
+| Model | Tap **along with** target playhead | **Listen**, then **Start**, letter-by-letter on a **new timeline** |
+| Input | Only while target audio plays | Off until Start; on in transmit only |
+| Display | One waveform lane | Top: word reveal; bottom: subtle live ·/− |
+| Score | Element count match | All letters correct → **elapsed ms** |
+| Word | Shown early / messy | Builds on listen; **full word visible** during transmit |
 
 ---
 
 ## 2. Canonical game flow (daily / splash)
 
+**Spec:** [new.md](./new.md)
+
 ### Phase: Idle
-- Show “Today’s Frequency” framing (no plaintext answer)
-- CTA: **Play target** (first tap also unlocks AudioContext)
-- Optional: open full game
+- Daily word loaded; no autoplay
+- CTA: **Play transmission** (unlocks AudioContext)
 
 ### Phase: Listen
-- Play full target word once at configured WPM (Farnsworth gaps OK)
-- **Target lane** animates with playhead; **user lane empty**
+- Full-word Morse audio; letters reveal one-by-one (at char start)
 - **Input disabled**
-- After audio ends → auto-enter **Your turn** (or require a **GO** button — prefer explicit GO on mobile)
-- Allow **Replay** target (re-enter listen; wipe incomplete transmit if any)
+- Ends → **ready** (full word shown)
+
+### Phase: Ready
+- Full word visible; **Start transmission** required
+- Replay allowed
 
 ### Phase: Transmit
-- **User timeline starts at t = 0** (on GO or first key — pick one and keep it)
-- Target lane **frozen** (dim is fine); optional mini “pattern” without revealing letters
-- User keys dit/dah freely (hold duration); **sidetone** on key down/up
-- **User lane** grows on its own clock — **never** share target `currentTime`
-- End when: **Submit**, and/or silence timeout after enough activity, and/or explicit “I’m done”
-- Do **not** require lockstep with the ghost
+- Timer starts on **Start** (`performance.now()` → ms)
+- Letter-by-letter keying; live ·/− under word; sidetone
+- Wrong letter clears **current** buffer only
+- Replay optional (timer keeps running)
 
 ### Phase: Result
-- Compare **element sequence** (P0); optional timing quality (P1)
-- Reveal word + what user sent + correct/incorrect + rough WPM
-- Actions: Try again (back to idle/listen), Open full game, share later
+- Stop timer; show **ms** (+ optional seconds); celebration
+- Try again → ready (clear progress, timer zero)
 
 ```text
-idle → listen → transmit → result
-         ↑         │
-         └─ replay ┘
+idle → listen → ready → transmit → result
+         ↑                │
+         └──── replay ────┘
 ```
 
 ---
@@ -59,11 +59,11 @@ idle → listen → transmit → result
 
 | Mode | Default behavior |
 |------|------------------|
-| **Daily (splash)** | Whole-word listen → transmit (dual timeline) |
-| **Practice / full game** | Same loop; may add WPM control later |
-| **Lesson** | Same keying model; encode chars correctly; letter-by-letter **optional later** |
-| **Rhythm-sync hard mode** | Out of scope for default; only if explicitly added later |
-| **Letter-by-letter** | Backlog for learning path (see §8) — not blocking dual-timeline ship |
+| **Daily (splash)** | Listen → Start → letter-by-letter → ms ([new.md](./new.md)) |
+| **Practice / full game** | Align to dual timeline when rewritten |
+| **Lesson** | May reuse letter matcher |
+| **Rhythm-sync hard mode** | Out of scope for default |
+| **Blind mode** | Optional later: hide word during transmit |
 
 ---
 

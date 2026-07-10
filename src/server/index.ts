@@ -6,6 +6,8 @@ import { daily } from './routes/daily';
 import { forms } from './routes/forms';
 import { menu } from './routes/menu';
 import { progress } from './routes/progress';
+import { leaderboard } from './routes/leaderboard';
+import { share } from './routes/share';
 import { triggers } from './routes/triggers';
 
 const app = new Hono();
@@ -18,6 +20,8 @@ internal.route('/triggers', triggers);
 app.route('/api', api);
 app.route('/api', daily);
 app.route('/api', progress);
+app.route('/api', leaderboard);
+app.route('/api', share);
 app.route('/internal', internal);
 
 serve({

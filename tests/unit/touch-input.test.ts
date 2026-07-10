@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TouchInput } from '../../src/client/systems/TouchInput';
 import type { MorseElement } from '../../src/client/systems/TouchInput';
-import {
-  DIT_THRESHOLD_MS,
-  DAH_MIN_MS,
-  MAX_DAH_MS,
-} from '../fixtures/timing-fixtures';
+import { MAX_DAH_MS } from '../fixtures/timing-fixtures';
 
 describe('TouchInput', () => {
   let touchInput: TouchInput;
@@ -23,6 +19,22 @@ describe('TouchInput', () => {
     it('TI-05: calls haptic on pointer down', () => {
       touchInput['handlePointerDown']();
       expect(haptic).toHaveBeenCalledWith(10);
+    });
+
+    it('fires onKeyDown when provided', () => {
+      const onKeyDown = vi.fn();
+      touchInput.bind({ onElement, onKeyDown });
+      touchInput['handlePointerDown']();
+      expect(onKeyDown).toHaveBeenCalledOnce();
+    });
+
+    it('ignores double pointer down without up', () => {
+      const onKeyDown = vi.fn();
+      touchInput.bind({ onElement, onKeyDown });
+      vi.spyOn(performance, 'now').mockReturnValue(1000);
+      touchInput['handlePointerDown']();
+      touchInput['handlePointerDown']();
+      expect(onKeyDown).toHaveBeenCalledOnce();
     });
   });
 
@@ -51,6 +63,29 @@ describe('TouchInput', () => {
     it('ignores pointer up without prior down', () => {
       touchInput['handlePointerUp']();
       expect(onElement).not.toHaveBeenCalled();
+    });
+
+    it('fires onKeyUp with element and duration', () => {
+      const onKeyUp = vi.fn();
+      touchInput.bind({ onElement, onKeyUp });
+      vi.spyOn(performance, 'now').mockReturnValueOnce(1000).mockReturnValueOnce(1080);
+      touchInput['handlePointerDown']();
+      touchInput['handlePointerUp']();
+      expect(onKeyUp).toHaveBeenCalledWith('dit', 80);
+    });
+
+    it('uses WPM-relative threshold when set', () => {
+      // threshold 120ms: 100 → dit, 150 → dah
+      touchInput.setDitThresholdMs(120);
+      vi.spyOn(performance, 'now').mockReturnValueOnce(1000).mockReturnValueOnce(1100);
+      touchInput['handlePointerDown']();
+      touchInput['handlePointerUp']();
+      expect(onElement).toHaveBeenCalledWith('dit', 100);
+
+      vi.spyOn(performance, 'now').mockReturnValueOnce(2000).mockReturnValueOnce(2150);
+      touchInput['handlePointerDown']();
+      touchInput['handlePointerUp']();
+      expect(onElement).toHaveBeenLastCalledWith('dah', 150);
     });
   });
 
