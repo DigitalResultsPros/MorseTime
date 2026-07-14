@@ -96,7 +96,7 @@ export const GameApp = () => {
           onHome={goHub}
           homeLabel="Practice home"
           footer={footer}
-          below={<LeaderboardPanel refreshKey={boardKey} limit={3} columns={3} />}
+          below={<LeaderboardPanel refreshKey={boardKey} />}
         />
       </div>
     </div>

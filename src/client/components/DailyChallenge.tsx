@@ -844,7 +844,7 @@ export const DailyChallenge = ({
           </div>
         </div>
       )}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-3 py-2">
         <div className="my-auto flex w-full flex-col items-center gap-1">
         <header className="w-full max-w-md flex items-center justify-between shrink-0">
           <h1 className={`font-bold ${isExpanded ? 'text-lg' : 'text-base'}`}>

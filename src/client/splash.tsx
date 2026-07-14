@@ -42,7 +42,7 @@ export const SplashApp = () => {
       onResult={onResult}
       footer={footer}
       cheatSheet={<MorseCheatSheet defaultOpen={false} />}
-      below={<LeaderboardPanel refreshKey={boardKey} limit={3} columns={3} />}
+      below={<LeaderboardPanel refreshKey={boardKey} />}
     />
   );
 };
