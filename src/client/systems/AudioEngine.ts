@@ -170,9 +170,16 @@ export class AudioEngine {
     return this.ctx?.currentTime ?? 0;
   }
 
-  /** AudioContext state for debugging (running | suspended | closed). */
-  getContextState(): string {
-    return this.ctx?.state ?? 'none';
+  /** Two-note ascending success chime on a correct full-word transmit. */
+  playSuccessChime(): void {
+    if (!this.ctx) return;
+    try {
+      const t = this.ctx.currentTime + 0.02;
+      this.scheduleTone(t, 0.07);
+      this.scheduleTone(t + 0.1, 0.12);
+    } catch {
+      /* ignore */
+    }
   }
 
   destroy(): void {

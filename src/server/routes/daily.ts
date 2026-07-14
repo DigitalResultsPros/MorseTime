@@ -3,6 +3,11 @@ import { redis, context } from '@devvit/web/server';
 import type { DailyFrequencyResponse } from '../../shared/api';
 import { encodeString } from '../../shared/morse';
 import { ensureStickyBoardComment } from '../core/boardComment';
+import {
+  issueDailyToken,
+  resolveMemberId,
+  resolveUsername,
+} from '../core/dailyBoard';
 
 const WORDS = [
   'PARIS', 'CODE', 'MORSE', 'SIGNAL', 'RADIO', 'TONE', 'KEY', 'DIT', 'DAH',
@@ -62,9 +67,22 @@ daily.get('/daily-frequency', async (c) => {
     }
   }
 
+  // Issue a per-day anti-cheat token tied to the member (echoed on submit).
+  let token: string | undefined;
+  try {
+    const username = await resolveUsername();
+    const memberId = resolveMemberId(username);
+    if (memberId) {
+      token = await issueDailyToken(memberId, today);
+    }
+  } catch (err) {
+    console.error('issueDailyToken failed:', err);
+  }
+
   return c.json<DailyFrequencyResponse>({
     type: 'daily-frequency',
     date: today,
+    token,
     data,
   });
 });

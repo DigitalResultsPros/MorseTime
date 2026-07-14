@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { navigateTo, requestExpandedMode } from '@devvit/web/client';
 import { DailyChallenge } from './components/DailyChallenge';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
+import { MorseCheatSheet } from './components/MorseCheatSheet';
 
 const footer = (
   <>
@@ -40,6 +41,7 @@ export const SplashApp = () => {
       onExpand={(e) => requestExpandedMode(e, 'game')}
       onResult={onResult}
       footer={footer}
+      cheatSheet={<MorseCheatSheet defaultOpen={false} />}
       below={<LeaderboardPanel refreshKey={boardKey} limit={3} columns={3} />}
     />
   );

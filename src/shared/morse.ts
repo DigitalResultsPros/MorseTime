@@ -17,7 +17,7 @@ export interface FarnsworthTiming extends Timing {
   effectiveWpm: number;
 }
 
-const MORSE_MAP: Record<string, MorseElement[]> = {
+export const MORSE_MAP: Record<string, MorseElement[]> = {
   A: ['dit', 'dah'],
   B: ['dah', 'dit', 'dit', 'dit'],
   C: ['dah', 'dit', 'dah', 'dit'],

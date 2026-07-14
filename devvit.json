@@ -52,6 +52,17 @@
   "triggers": {
     "onAppInstall": "/internal/triggers/on-app-install"
   },
+  "scheduler": {
+    "tasks": {
+      "daily-frequency-post": {
+        "endpoint": "/internal/scheduler/daily-frequency-post",
+        "cron": "0 0 * * *",
+        "data": {
+          "subreddit": "morsetime_dev"
+        }
+      }
+    }
+  },
   "scripts": {
     "dev": "vite build --watch",
     "build": "vite build"

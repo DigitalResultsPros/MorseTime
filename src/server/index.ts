@@ -9,6 +9,7 @@ import { progress } from './routes/progress';
 import { leaderboard } from './routes/leaderboard';
 import { share } from './routes/share';
 import { triggers } from './routes/triggers';
+import { scheduler } from './routes/scheduler';
 
 const app = new Hono();
 const internal = new Hono();
@@ -16,6 +17,7 @@ const internal = new Hono();
 internal.route('/menu', menu);
 internal.route('/form', forms);
 internal.route('/triggers', triggers);
+internal.route('/scheduler', scheduler);
 
 app.route('/api', api);
 app.route('/api', daily);

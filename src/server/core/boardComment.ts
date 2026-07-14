@@ -6,6 +6,7 @@ import {
   stickyThrottleKey,
   todayUtc,
   TOP_N,
+  getParticipantCount,
 } from './dailyBoard';
 
 /** Minimum seconds between sticky edits (unless force). */
@@ -60,7 +61,8 @@ export async function ensureStickyBoardComment(postId: string): Promise<string |
 
   const date = todayUtc();
   const entries = await buildEntries(date, TOP_N);
-  const text = formatBoardCommentMarkdown(date, entries);
+  const participants = await getParticipantCount(date);
+  const text = formatBoardCommentMarkdown(date, entries, participants);
 
   try {
     console.log('Creating sticky leaderboard on', postId);
@@ -128,7 +130,8 @@ export async function syncStickyBoardComment(options?: {
 
   const date = todayUtc();
   const entries = await buildEntries(date, TOP_N);
-  const text = formatBoardCommentMarkdown(date, entries);
+  const participants = await getParticipantCount(date);
+  const text = formatBoardCommentMarkdown(date, entries, participants);
 
   try {
     const comment = await reddit.getCommentById(asCommentId(commentId));

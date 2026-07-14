@@ -18,6 +18,7 @@ async function fetchLeaderboard(limit: number): Promise<{
   entries: LeaderboardEntry[];
   me: LeaderboardResponse['me'];
   date: string;
+  participants?: number;
 }> {
   const res = await fetch('/api/leaderboard');
   if (!res.ok) throw new Error('Failed to load leaderboard');
@@ -27,6 +28,7 @@ async function fetchLeaderboard(limit: number): Promise<{
     entries: data.entries.slice(0, limit),
     me: data.me,
     date: data.date,
+    participants: data.participants,
   };
 }
 
@@ -46,6 +48,7 @@ export const LeaderboardPanel = ({
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [me, setMe] = useState<LeaderboardResponse['me']>(null);
   const [date, setDate] = useState<string>('');
+  const [participants, setParticipants] = useState<number | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [retryTick, setRetryTick] = useState(0);
 
@@ -58,6 +61,7 @@ export const LeaderboardPanel = ({
         setEntries(data.entries);
         setMe(data.me);
         setDate(data.date);
+        setParticipants(data.participants ?? null);
         setStatus('ready');
       } catch (err) {
         console.error(err);
@@ -86,6 +90,14 @@ export const LeaderboardPanel = ({
         <h2 className="text-xs font-semibold text-slate-200">Today&apos;s Leaderboard</h2>
         <span className="text-[10px] text-slate-600 font-mono">{date || '—'}</span>
       </div>
+
+      {status === 'ready' && participants !== null && participants > 0 && (
+        <p className="text-[10px] text-slate-500 mb-1">
+          {participants === 1
+            ? '1 operator copied today'
+            : `${participants} operators copied today`}
+        </p>
+      )}
 
       {status === 'loading' && (
         <p className="text-[11px] text-slate-500 py-1">Loading ranks…</p>

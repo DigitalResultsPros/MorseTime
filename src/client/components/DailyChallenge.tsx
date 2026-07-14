@@ -23,9 +23,9 @@ import {
   getSequenceDurationMs,
 } from '../../shared/morse';
 import type { Timing } from '../../shared/morse';
-import type { DailyFrequency, LeaderboardSubmitResponse } from '../../shared/api';
+import type { DailyFrequency, LeaderboardEntry, LeaderboardSubmitResponse } from '../../shared/api';
 import { transmitWpm } from '../../shared/wpm';
-import { navigateTo } from '@devvit/web/client';
+import { navigateTo, showToast } from '@devvit/web/client';
 import {
   MorseSoundBars,
   buildToneMarks,
@@ -149,6 +149,8 @@ export type DailyChallengeProps = {
   /** Extra chrome under the challenge (e.g. leaderboard). */
   below?: ReactNode;
   footer?: ReactNode;
+  /** Optional collapsible helper (e.g. Morse cheat sheet) shown near the links. */
+  cheatSheet?: ReactNode;
   /** Auto-submit score to `/api/leaderboard` on complete (default true). */
   submitScore?: boolean;
   /**
@@ -179,6 +181,7 @@ export const DailyChallenge = ({
   webTrainingLabel = 'Full training on the web →',
   below,
   footer,
+  cheatSheet,
   submitScore = true,
   practiceWord,
   title,
@@ -191,6 +194,7 @@ export const DailyChallenge = ({
 }: DailyChallengeProps) => {
   const [phase, setPhase] = useState<Phase>('loading');
   const [dailyWord, setDailyWord] = useState<DailyFrequency | null>(null);
+  const [dailyDate, setDailyDate] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [revealCount, setRevealCount] = useState(0);
   const [letterIndex, setLetterIndex] = useState(0);
@@ -209,13 +213,31 @@ export const DailyChallenge = ({
       return true;
     }
   });
-  const [streak] = useState(0);
+  const [streak, setStreak] = useState(0);
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const [listenWpm, setListenWpm] = useState(INITIAL_WPM);
   const [activeListenWpm, setActiveListenWpm] = useState(INITIAL_WPM);
   const [wideLetterSpacing, setWideLetterSpacing] = useState(true);
   const [boundaryFlashIndex, setBoundaryFlashIndex] = useState<number | null>(null);
   const [lastSubmit, setLastSubmit] = useState<LeaderboardSubmitResponse | null>(null);
+  /** Anti-cheat token issued by GET /api/daily-frequency (echoed on submit). */
+  const [dailyToken, setDailyToken] = useState<string | undefined>(undefined);
+  /** Share-to-board status for the result card "Post my time" action. */
+  const [shareState, setShareState] = useState<'idle' | 'sharing' | 'done' | 'error'>('idle');
+  const [sharePermalink, setSharePermalink] = useState<string | null>(null);
+  /** Top other operators today, for the "others on this frequency" ghost row. */
+  const [others, setOthers] = useState<LeaderboardEntry[]>([]);
+  /** First-run tutorial overlay (dismissed via localStorage). */
+  const [showTutorial, setShowTutorial] = useState(false);
+  /** Blind mode: hide the word while transmitting (accessibility drill). */
+  const [blindMode, setBlindMode] = useState(false);
+  /** Honor prefers-reduced-motion for the completion celebration. */
+  const [reduceMotion, setReduceMotion] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
   /** Practice: tone events drive single on/off lamp (not a full pattern string). */
   const [listenTones, setListenTones] = useState<ToneMark[]>([]);
   /** AudioContext time at listen lead start — lamp uses same clock as tones. */
@@ -266,9 +288,16 @@ export const DailyChallenge = ({
     try {
       const res = await fetch('/api/daily-frequency');
       if (!res.ok) throw new Error('Failed to load daily frequency');
-      const data = (await res.json()) as { type: string; data: DailyFrequency };
+      const data = (await res.json()) as {
+        type: string;
+        date: string;
+        token?: string;
+        data: DailyFrequency;
+      };
       if (data.type === 'daily-frequency' && data.data?.word) {
         setDailyWord(data.data);
+        setDailyDate(data.date ?? null);
+        setDailyToken(data.token);
         wordLettersRef.current = lettersOnly(data.data.word);
         touchInput.setDitThresholdMs(ditDahThresholdMs(INITIAL_WPM));
         setPhaseBoth('idle');
@@ -309,10 +338,17 @@ export const DailyChallenge = ({
       try {
         const res = await fetch('/api/daily-frequency');
         if (!res.ok) throw new Error('Failed to load daily frequency');
-        const data = (await res.json()) as { type: string; data: DailyFrequency };
+        const data = (await res.json()) as {
+          type: string;
+          date: string;
+          token?: string;
+          data: DailyFrequency;
+        };
         if (cancelled) return;
         if (data.type === 'daily-frequency' && data.data?.word) {
           setDailyWord(data.data);
+          setDailyDate(data.date ?? null);
+          setDailyToken(data.token);
           wordLettersRef.current = lettersOnly(data.data.word);
           touchInput.setDitThresholdMs(ditDahThresholdMs(INITIAL_WPM));
           setPhaseBoth('idle');
@@ -331,6 +367,38 @@ export const DailyChallenge = ({
     };
   }, [setPhaseBoth, practiceWord]);
 
+  // First-run tutorial (daily play only) + persisted daily streak.
+  useEffect(() => {
+    if (practiceWord) return;
+    void (async () => {
+      try {
+        if (localStorage.getItem('morsetime-tutorial-dismissed') !== '1') {
+          setShowTutorial(true);
+        }
+      } catch {
+        /* ignore */
+      }
+      try {
+        const res = await fetch('/api/leaderboard');
+        if (!res.ok) return;
+        const data = (await res.json()) as { type?: string; streak?: number };
+        if (data.type === 'leaderboard' && typeof data.streak === 'number') {
+          setStreak(data.streak);
+        }
+      } catch (err) {
+        console.error('Failed to load streak:', err);
+      }
+    })();
+  }, [practiceWord]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduceMotion(mq.matches);
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
+
   const ensureAudio = useCallback(async () => {
     await audioEngine.init();
   }, []);
@@ -339,6 +407,7 @@ export const DailyChallenge = ({
     async (ms: number, letterCount: number) => {
       let submit: LeaderboardSubmitResponse | null = null;
       setLastSubmit(null);
+      setOthers([]);
       const letterCorrect = letterCorrectRef.current;
       const letterAttempts = letterAttemptsRef.current;
       if (submitScore && !isPractice) {
@@ -346,17 +415,35 @@ export const DailyChallenge = ({
           const res = await fetch('/api/leaderboard', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ elapsedMs: ms, letterCount }),
+            body: JSON.stringify({ elapsedMs: ms, letterCount, token: dailyToken }),
           });
           if (res.ok) {
             submit = (await res.json()) as LeaderboardSubmitResponse;
             if (submit.type === 'leaderboard-submit') {
               setLastSubmit(submit);
+              if (typeof submit.streak === 'number') setStreak(submit.streak);
             }
           }
         } catch (err) {
           console.error('Leaderboard submit failed:', err);
         }
+        // Load "others on this frequency" (other top operators today).
+        void (async () => {
+          try {
+            const res = await fetch('/api/leaderboard');
+            if (!res.ok) return;
+            const data = (await res.json()) as { type?: string; entries?: LeaderboardEntry[] };
+            if (data.type === 'leaderboard' && Array.isArray(data.entries)) {
+              const mine = submit?.username;
+              const othersToday = data.entries
+                .filter((e) => e.username !== mine)
+                .slice(0, 2);
+              setOthers(othersToday);
+            }
+          } catch (err) {
+            console.error('Failed to load others:', err);
+          }
+        })();
       }
       onResultRef.current?.({
         elapsedMs: ms,
@@ -366,8 +453,42 @@ export const DailyChallenge = ({
         letterAttempts,
       });
     },
-    [submitScore, isPractice]
+    [submitScore, isPractice, dailyToken]
   );
+
+  const shareScore = useCallback(async () => {
+    if (!lastSubmit) return;
+    setShareState('sharing');
+    setSharePermalink(null);
+    try {
+      const res = await fetch('/api/share-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          elapsedMs: lastSubmit.elapsedMs,
+          wpm: lastSubmit.wpm,
+          rank: lastSubmit.rank,
+          improved: lastSubmit.improved,
+        }),
+      });
+      if (!res.ok) throw new Error('share failed');
+      const data = (await res.json()) as {
+        type?: string;
+        permalink?: string;
+      };
+      if (data.type === 'share-score' && data.permalink) {
+        setSharePermalink(data.permalink);
+        setShareState('done');
+        showToast('Posted to the board! 📻');
+      } else {
+        throw new Error('bad share response');
+      }
+    } catch (err) {
+      console.error('share-score failed:', err);
+      setShareState('error');
+      showToast('Could not post — try again');
+    }
+  }, [lastSubmit]);
 
   const playListen = useCallback(async () => {
     if (!dailyWord) return;
@@ -473,6 +594,9 @@ export const DailyChallenge = ({
     setErrorFlash(false);
     setCelebrate(false);
     setLastSubmit(null);
+    setOthers([]);
+    setShareState('idle');
+    setSharePermalink(null);
     transmitStartedAtRef.current = performance.now();
     touchInput.setDitThresholdMs(ditDahThresholdMs(listenWpm));
     setPhaseBoth('transmit');
@@ -492,6 +616,9 @@ export const DailyChallenge = ({
     setErrorFlash(false);
     setCelebrate(false);
     setLastSubmit(null);
+    setOthers([]);
+    setShareState('idle');
+    setSharePermalink(null);
     if (dailyWord) {
       setRevealCount(lettersOnly(dailyWord.word).length);
     }
@@ -591,9 +718,7 @@ export const DailyChallenge = ({
           setCelebrate(true);
           setPhaseBoth('result');
           try {
-            const t = audioEngine.getCurrentTime() + 0.02;
-            audioEngine.scheduleTone(t, 0.07);
-            audioEngine.scheduleTone(t + 0.1, 0.12);
+            audioEngine.playSuccessChime();
           } catch {
             /* ignore */
           }
@@ -676,7 +801,46 @@ export const DailyChallenge = ({
   // Layout: main challenge centered in space above board; leaderboard + footer pinned to bottom.
   // Outer flex-1 + my-auto centers when short; overflow-y-auto still reaches the top when tall.
   return (
-    <div className="flex h-full w-full flex-col bg-slate-900 text-white overflow-hidden box-border">
+    <div className="relative flex h-full w-full flex-col bg-slate-900 text-white overflow-hidden box-border">
+      {showTutorial && !isPractice && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="How to play"
+        >
+          <div className="w-full max-w-sm rounded-2xl border border-orange-500/30 bg-slate-900 px-5 py-5 flex flex-col gap-3 shadow-2xl">
+            <h2 className="text-base font-bold text-white">How to play 📻</h2>
+            <ol className="flex flex-col gap-2 text-sm text-slate-300 list-decimal list-inside">
+              <li>
+                Tap <span className="text-orange-300">Play transmission</span> to hear today's word in Morse.
+              </li>
+              <li>
+                Hit <span className="text-orange-300">Start transmission</span>, then hold to key it back.
+              </li>
+              <li>
+                A short hold = <span className="font-mono">·</span> (dit), a long hold ={' '}
+                <span className="font-mono">−</span> (dah).
+              </li>
+              <li>Fastest correct copy lands on the pinned leaderboard.</li>
+            </ol>
+            <button
+              type="button"
+              className="mt-1 w-full bg-orange-600 hover:bg-orange-500 text-white px-6 py-2.5 rounded-full font-bold min-h-11 text-sm"
+              onClick={() => {
+                try {
+                  localStorage.setItem('morsetime-tutorial-dismissed', '1');
+                } catch {
+                  /* ignore */
+                }
+                setShowTutorial(false);
+              }}
+            >
+              Got it — let's key
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-2">
         <div className="my-auto flex w-full flex-col items-center gap-1">
         <header className="w-full max-w-md flex items-center justify-between shrink-0">
@@ -686,9 +850,38 @@ export const DailyChallenge = ({
           {headerRight !== undefined ? (
             headerRight
           ) : (
-            <span className="text-xs text-slate-500">streak {streak}</span>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs tabular-nums ${
+                  streak > 0 ? 'text-orange-300/90' : 'text-slate-500'
+                }`}
+                title="Daily play streak"
+              >
+                {streak > 0 ? `🔥 ${streak}` : 'streak 0'}
+              </span>
+              {isExpanded && (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={blindMode}
+                  title="Blind mode — hide the word while you transmit"
+                  onClick={() => setBlindMode((v) => !v)}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                    blindMode
+                      ? 'bg-orange-500/20 text-orange-200 ring-1 ring-orange-500/40'
+                      : 'bg-slate-800 text-slate-400 ring-1 ring-slate-600/50'
+                  }`}
+                >
+                  Blind {blindMode ? 'on' : 'off'}
+                </button>
+              )}
+            </div>
           )}
         </header>
+
+        {dailyDate && !isPractice && (
+          <p className="text-xs text-slate-500 mt-0.5">{dailyDate}</p>
+        )}
 
         {phase === 'loading' && (
           <p className="text-slate-400 text-sm">
@@ -709,11 +902,18 @@ export const DailyChallenge = ({
           </div>
         )}
 
+        {!isPractice && (
+          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-800/50 px-4 py-3 text-sm text-slate-400 text-center shrink-0">
+            Everyone gets the same word every day. Listen first, then key as fast
+            as you can.
+          </div>
+        )}
+
         {/* ── RESULT: title · time · WPM · rank / next group ── */}
         {dailyWord && isResult && (
           <div
             className={`w-full max-w-sm shrink-0 rounded-2xl border border-green-500/25 bg-gradient-to-b from-green-500/15 to-slate-900/40 px-5 py-4 flex flex-col items-center gap-3 ${
-              celebrate ? 'mt-celebrate-banner' : ''
+              celebrate && !reduceMotion ? 'mt-celebrate-banner' : ''
             }`}
             role="status"
             aria-live="polite"
@@ -789,6 +989,29 @@ export const DailyChallenge = ({
                   Retry
                 </button>
               )}
+              {!isPractice && lastSubmit && (
+                <button
+                  type="button"
+                  disabled={shareState === 'sharing' || shareState === 'done'}
+                  className="w-full bg-slate-100 hover:bg-white text-slate-900 px-6 py-2.5 rounded-full font-bold min-h-11 text-sm transition-colors disabled:opacity-60"
+                  onClick={() => void shareScore()}
+                >
+                  {shareState === 'sharing'
+                    ? 'Posting…'
+                    : shareState === 'done'
+                      ? 'Posted ✓'
+                      : 'Post my time'}
+                </button>
+              )}
+              {!isPractice && shareState === 'done' && sharePermalink && (
+                <button
+                  type="button"
+                  className="w-full text-xs text-orange-300/90 hover:text-orange-200 transition-colors"
+                  onClick={() => navigateTo(sharePermalink)}
+                >
+                  View on Reddit ↗
+                </button>
+              )}
               {onHome && (
                 <button
                   type="button"
@@ -799,6 +1022,32 @@ export const DailyChallenge = ({
                 </button>
               )}
             </div>
+
+            {!isPractice && others.length > 0 && (
+              <div className="w-full max-w-sm mt-1 rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Others on this frequency
+                </p>
+                <ul className="mt-1 flex flex-col gap-1">
+                  {others.map((o) => (
+                    <li
+                      key={`${o.rank}-${o.username}`}
+                      className="flex items-center justify-between text-[11px]"
+                    >
+                      <span className="text-slate-400 truncate">
+                        <span className="text-slate-600 mr-1">#{o.rank}</span>
+                        u/{o.username}
+                      </span>
+                      <span className="font-mono text-slate-300 tabular-nums">
+                        {o.elapsedMs.toLocaleString()}
+                        <span className="text-slate-600 text-[9px] ml-0.5">ms</span>
+                        <span className="text-slate-600 ml-1">· {o.wpm.toFixed(1)} WPM</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -807,7 +1056,7 @@ export const DailyChallenge = ({
           <>
             <div
               className={`w-full max-w-md text-center relative shrink-0 mt-8 pt-1 pb-1 ${
-                celebrate ? 'mt-celebrate-word' : ''
+                celebrate && !reduceMotion ? 'mt-celebrate-word' : ''
               }`}
               aria-live="polite"
             >
@@ -831,7 +1080,7 @@ export const DailyChallenge = ({
                   else cls += ' text-white';
                   return (
                     <span key={`${ch}-${i}`} className={cls}>
-                      {shown ? ch : '·'}
+                      {blindMode && phase === 'transmit' ? '·' : shown ? ch : '·'}
                     </span>
                   );
                 })}
@@ -1027,11 +1276,11 @@ export const DailyChallenge = ({
         )}
 
         {(variant === 'inline' && onExpand && !isResult) || webTrainingUrl ? (
-          <div className="flex flex-col items-center gap-1 shrink-0 mt-0.5">
+          <div className="flex flex-row flex-wrap items-center justify-center gap-3 shrink-0 mt-1">
             {variant === 'inline' && onExpand && !isResult && (
               <button
                 type="button"
-                className="text-sm text-slate-500 hover:text-white transition-colors"
+                className="text-sm text-slate-500 hover:text-white transition-colors shrink-0"
                 onClick={handleExpand}
               >
                 {expandLabel}
@@ -1040,12 +1289,13 @@ export const DailyChallenge = ({
             {webTrainingUrl && (
               <button
                 type="button"
-                className="text-sm text-orange-400/90 hover:text-orange-300 transition-colors"
+                className="text-sm text-orange-400/90 hover:text-orange-300 transition-colors shrink-0"
                 onClick={() => navigateTo(webTrainingUrl)}
               >
                 {webTrainingLabel}
               </button>
             )}
+            {cheatSheet && <div className="flex-1 min-w-0">{cheatSheet}</div>}
           </div>
         ) : null}
         </div>

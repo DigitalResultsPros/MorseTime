@@ -7,6 +7,7 @@ import {
 } from '../../shared/curriculum';
 import type { LessonState } from '../../shared/api';
 import { MORSETIME_WEB_TRAINING_LABEL, MORSETIME_WEB_URL } from '../site';
+import { MorseCheatSheet } from './MorseCheatSheet';
 
 export type TrainingHubProps = {
   onOpenDaily: () => void;
@@ -36,9 +37,34 @@ function passAccuracyPct(state: LessonState): number | null {
   return Math.round((100 * state.passLetterCorrect) / state.passLetterAttempts);
 }
 
+type Badge = { id: string; icon: string; label: string };
+
+/** Identity milestones derived from already-fetched progress + leaderboard data. */
+function buildBadges(p: LessonState, dailyStreak: number, hasCopied: boolean): Badge[] {
+  const badges: Badge[] = [];
+  if (hasCopied) badges.push({ id: 'first-copy', icon: '🎯', label: 'First Copy' });
+  if (p.completedLessons.length >= 1) {
+    badges.push({ id: 'first-lesson', icon: '📚', label: 'First Lesson' });
+  }
+  if (hasCompletedIntro(p.completedLessons)) {
+    badges.push({ id: 'intro', icon: '🚀', label: 'Intro Complete' });
+  }
+  const practice = p.practiceStreakDays;
+  if (practice >= 30) badges.push({ id: 'practice-30', icon: '🔥', label: 'Practice 30' });
+  else if (practice >= 7) badges.push({ id: 'practice-7', icon: '🔥', label: 'Practice 7' });
+  else if (practice >= 3) badges.push({ id: 'practice-3', icon: '🔥', label: 'Practice 3' });
+  const daily = dailyStreak;
+  if (daily >= 30) badges.push({ id: 'daily-30', icon: '📅', label: 'Daily 30' });
+  else if (daily >= 7) badges.push({ id: 'daily-7', icon: '📅', label: 'Daily 7' });
+  else if (daily >= 3) badges.push({ id: 'daily-3', icon: '📅', label: 'Daily 3' });
+  return badges;
+}
+
 export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubProps) => {
   const [state, setState] = useState<LessonState | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [dailyStreak, setDailyStreak] = useState(0);
+  const [hasCopied, setHasCopied] = useState(false);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -54,6 +80,22 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
       setState(defaultState());
       setStatus('error');
     }
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (res.ok) {
+        const data = (await res.json()) as {
+          type?: string;
+          streak?: number;
+          me?: unknown;
+        };
+        if (data.type === 'leaderboard' && typeof data.streak === 'number') {
+          setDailyStreak(data.streak);
+        }
+        setHasCopied(data.type === 'leaderboard' && data.me !== null && data.me !== undefined);
+      }
+    } catch (err) {
+      console.error('Failed to load daily streak:', err);
+    }
   }, []);
 
   useEffect(() => {
@@ -66,19 +108,43 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
   const acc = passAccuracyPct(progress);
   const groupsDone = Math.min(10, progress.passGroupsCompleted);
   const resumeLesson = Math.min(progress.currentLesson, FREE_LESSON_STEPS);
+  const badges = buildBadges(progress, dailyStreak, hasCopied);
 
   return (
     <div className="flex h-full w-full flex-col bg-slate-900 text-white overflow-hidden box-border">
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-2">
-        <div className="my-auto flex w-full flex-col items-center gap-3 max-w-md mx-auto">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-1.5">
+        <div className="my-auto flex w-full flex-col items-center gap-2 max-w-md mx-auto">
           <header className="w-full flex items-center justify-between shrink-0">
             <h1 className="text-lg font-bold">Practice</h1>
             <span className="text-xs text-slate-500 tabular-nums">
               {progress.practiceStreakDays > 0
-                ? `streak ${progress.practiceStreakDays}`
+                ? `practice ${progress.practiceStreakDays}`
                 : 'intro'}
+              {dailyStreak > 0 ? ` · 🔥 ${dailyStreak}` : ''}
             </span>
           </header>
+
+          {/* Achievement badges — derived from progress + leaderboard data */}
+          <section className="w-full shrink-0" aria-label="Badges">
+            {badges.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {badges.map((b) => (
+                  <span
+                    key={b.id}
+                    title={b.label}
+                    className="inline-flex items-center gap-1 rounded-full bg-slate-800/80 px-2 py-1 text-[11px] font-medium text-slate-200 ring-1 ring-slate-600/50"
+                  >
+                    <span aria-hidden>{b.icon}</span>
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-600">
+                Earn your first badge — copy a word or clear a lesson.
+              </p>
+            )}
+          </section>
 
           {status === 'loading' && (
             <p className="text-sm text-slate-500 w-full">Loading progress…</p>
@@ -94,7 +160,7 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
 
           {/* Intro complete banner */}
           {introDone && (
-            <section className="w-full rounded-xl border border-green-500/30 bg-gradient-to-b from-green-500/10 to-slate-900/40 px-3 py-3 shrink-0 text-center">
+              <section className="w-full rounded-xl border border-green-500/30 bg-gradient-to-b from-green-500/10 to-slate-900/40 px-3 py-2.5 shrink-0 text-center">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-green-400/90">
                 Intro complete
               </p>
@@ -123,7 +189,7 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
 
           {/* Continue card — while intro in progress */}
           {!introDone && (
-            <section className="w-full rounded-xl border border-orange-500/30 bg-gradient-to-b from-orange-500/10 to-slate-900/40 px-3 py-3 shrink-0">
+              <section className="w-full rounded-xl border border-orange-500/30 bg-gradient-to-b from-orange-500/10 to-slate-900/40 px-3 py-2.5 shrink-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-400/90">
                 Continue
               </p>
@@ -163,11 +229,11 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
 
           {/* Lesson map — 4 free steps only */}
           <section className="w-full shrink-0" aria-label="Intro lessons">
-            <h2 className="text-xs font-semibold text-slate-300 mb-1.5">
+            <h2 className="text-xs font-semibold text-slate-300 mb-1">
               Intro lessons
               <span className="text-slate-600 font-normal"> · free · 5 letters</span>
             </h2>
-            <ol className="grid grid-cols-4 gap-1.5">
+            <ol className="grid grid-cols-4 gap-1">
               {CURRICULUM.map((lesson) => {
                 const n = lesson.lessonNumber;
                 const cleared = progress.completedLessons.includes(n);
@@ -184,7 +250,7 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
                           : `Clear lesson ${n - 1} first — 10 groups at 90%+`
                       }
                       onClick={() => unlocked && onOpenLesson(n)}
-                      className={`w-full aspect-square rounded-lg text-sm font-bold tabular-nums transition-colors ${
+                      className={`w-full h-11 rounded-lg text-sm font-bold tabular-nums transition-colors ${
                         !unlocked
                           ? 'bg-slate-950/80 text-slate-600 border border-slate-800 cursor-not-allowed'
                           : isCurrent
@@ -200,9 +266,14 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
                 );
               })}
             </ol>
-            <p className="mt-1.5 text-[10px] text-slate-600 text-center">
+            <p className="mt-1 text-[10px] text-slate-600 text-center">
               K M → +R → +S → +U · pass 10 groups at 90%+
             </p>
+          </section>
+
+          {/* Morse cheat sheet — between Intro lessons and Challenges */}
+          <section className="w-full shrink-0">
+            <MorseCheatSheet defaultOpen={false} />
           </section>
 
           {/* Challenges */}
@@ -210,7 +281,7 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
             <h2 className="text-xs font-semibold text-slate-300">Challenges</h2>
             <button
               type="button"
-              className="w-full text-left rounded-xl border border-slate-700/80 bg-slate-950/50 px-3 py-2.5 hover:border-slate-500 transition-colors"
+              className="w-full text-left rounded-xl border border-slate-700/80 bg-slate-950/50 px-3 py-2 hover:border-slate-500 transition-colors"
               onClick={onOpenDaily}
             >
               <span className="text-sm font-medium text-slate-100">Today&apos;s Frequency</span>
@@ -220,7 +291,7 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
             </button>
             <button
               type="button"
-              className="w-full text-left rounded-xl border border-slate-700/80 bg-slate-950/50 px-3 py-2.5 hover:border-orange-500/40 transition-colors"
+              className="w-full text-left rounded-xl border border-slate-700/80 bg-slate-950/50 px-3 py-2 hover:border-orange-500/40 transition-colors"
               onClick={() => navigateTo(MORSETIME_WEB_URL)}
             >
               <span className="text-sm font-medium text-orange-300">

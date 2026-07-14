@@ -15,6 +15,12 @@ import {
   buildEntries,
   rankOf,
   computeWpm,
+  loadDailyStreak,
+  touchDailyStreak,
+  recordParticipant,
+  getParticipantCount,
+  minPlausibleMs,
+  validateDailyToken,
   MIN_ELAPSED_MS,
   MAX_ELAPSED_MS,
   MAX_LETTERS,
@@ -53,11 +59,18 @@ leaderboard.get('/leaderboard', async (c) => {
     }
   }
 
+  const [streak, participants] = await Promise.all([
+    loadDailyStreak(memberId),
+    getParticipantCount(date),
+  ]);
+
   return c.json<LeaderboardResponse>({
     type: 'leaderboard',
     date,
     entries,
     me,
+    streak,
+    participants,
   });
 });
 
@@ -82,7 +95,27 @@ leaderboard.post('/leaderboard', async (c) => {
   const date = todayUtc();
   const username = await resolveUsername();
   const memberId = resolveMemberId(username);
+
+  // Anti-cheat: verify the per-day token issued by GET /api/daily-frequency.
+  // Anonymous players (no member id) are allowed through without a token.
+  if (memberId !== 'name:anonymous' && !(await validateDailyToken(body.token, memberId, date))) {
+    return c.json({ status: 'error', message: 'Missing or invalid anti-cheat token' }, 400);
+  }
+
+  // Anti-cheat: a correct copy cannot be faster than its elements keyed at an
+  // extreme pace plus gaps + buffer.
+  if (elapsedMs < minPlausibleMs(letterCount)) {
+    return c.json(
+      { status: 'error', message: 'Transmission implausibly fast — nice try, agent.' },
+      400
+    );
+  }
+
   const wpm = computeWpm(elapsedMs, letterCount);
+
+  // Consecutive daily-transmission streak (idempotent per day) + participation signal.
+  const streak = await touchDailyStreak(memberId);
+  await recordParticipant(memberId, date);
 
   const existing = await redis.zScore(boardKey(date), memberId);
   const improved = existing === undefined || elapsedMs < existing;
@@ -114,5 +147,6 @@ leaderboard.post('/leaderboard', async (c) => {
     rank,
     improved,
     username,
+    streak,
   });
 });

@@ -29,6 +29,8 @@ export type DailyFrequency = {
 export type DailyFrequencyResponse = {
   type: 'daily-frequency';
   date: string;
+  /** One-time-per-day anti-cheat token (must be echoed on leaderboard submit). */
+  token?: string;
   data: DailyFrequency;
 };
 
@@ -113,6 +115,10 @@ export type LeaderboardResponse = {
     elapsedMs: number;
     wpm: number;
   } | null;
+  /** Current user's consecutive daily-transmission streak. */
+  streak: number;
+  /** Distinct operators who transmitted today. */
+  participants: number;
 };
 
 export type LeaderboardSubmitRequest = {
@@ -120,6 +126,8 @@ export type LeaderboardSubmitRequest = {
   elapsedMs: number;
   /** Letter count used for effective WPM (no spaces). */
   letterCount: number;
+  /** Anti-cheat token issued by GET /api/daily-frequency. */
+  token?: string;
 };
 
 export type LeaderboardSubmitResponse = {
@@ -131,6 +139,8 @@ export type LeaderboardSubmitResponse = {
   /** True when this run beat the user's previous best for the day. */
   improved: boolean;
   username: string;
+  /** Current user's consecutive daily-transmission streak after this run. */
+  streak: number;
 };
 
 /** Explicit user action: post score as a reply under the sticky board. */
