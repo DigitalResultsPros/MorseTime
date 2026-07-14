@@ -26,6 +26,7 @@ import type { Timing } from '../../shared/morse';
 import type { DailyFrequency, LeaderboardEntry, LeaderboardSubmitResponse } from '../../shared/api';
 import { transmitWpm } from '../../shared/wpm';
 import { navigateTo, showToast } from '@devvit/web/client';
+import { readNumber, writeNumber, writeFlag } from '../lib/storage';
 import {
   MorseSoundBars,
   buildToneMarks,
@@ -215,7 +216,9 @@ export const DailyChallenge = ({
   });
   const [streak, setStreak] = useState(0);
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
-  const [listenWpm, setListenWpm] = useState(INITIAL_WPM);
+  const [listenWpm, setListenWpm] = useState(() =>
+    readNumber('morsetime-listen-wpm', INITIAL_WPM)
+  );
   const [activeListenWpm, setActiveListenWpm] = useState(INITIAL_WPM);
   const [wideLetterSpacing, setWideLetterSpacing] = useState(true);
   const [boundaryFlashIndex, setBoundaryFlashIndex] = useState<number | null>(null);
@@ -723,7 +726,7 @@ export const DailyChallenge = ({
             /* ignore */
           }
           try {
-            localStorage.setItem(TIP_STORAGE_KEY, '1');
+            writeFlag(TIP_STORAGE_KEY, true);
             setShowTip(false);
           } catch {
             /* ignore */
@@ -1175,6 +1178,7 @@ export const DailyChallenge = ({
                       onChange={(e) => {
                         const v = Number(e.target.value);
                         setListenWpm(v);
+                        writeNumber('morsetime-listen-wpm', v);
                         touchInput.setDitThresholdMs(ditDahThresholdMs(v));
                       }}
                       className="w-full h-1.5 accent-orange-500 cursor-pointer"
@@ -1267,9 +1271,21 @@ export const DailyChallenge = ({
               )}
 
               {showTip && phase !== 'transmit' && (
-                <p className="text-xs text-slate-500 text-center max-w-xs shrink-0">
-                  Play transmission, then start transmitting each letter.
-                </p>
+                <div className="flex items-center justify-center gap-2 max-w-xs shrink-0">
+                  <p className="text-xs text-slate-500 text-center">
+                    Play transmission, then start transmitting each letter.
+                  </p>
+                  <button
+                    type="button"
+                    className="shrink-0 text-[10px] text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+                    onClick={() => {
+                      writeFlag(TIP_STORAGE_KEY, true);
+                      setShowTip(false);
+                    }}
+                  >
+                    Don't show again
+                  </button>
+                </div>
               )}
             </div>
           </>
