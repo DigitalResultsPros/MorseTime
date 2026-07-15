@@ -4,7 +4,7 @@
 **Status:** Dual-timeline gameplay locked (2026-07-10).  
 **See also:** [../agent/DECISIONS.md](../agent/DECISIONS.md) · [gui.md](./gui.md) · [../README.md](../README.md)
 
-**Code reality check (2026-07-10):** **Splash** implements the loop in [new.md](./new.md). Expanded `game.tsx` may still use older shared-playhead behavior until updated.
+**Code reality check (2026-07-15):** **Splash** and expanded daily both use `DailyChallenge` (listen → Start → letter key → ms). Expanded also mounts **TrainingHub** + **LessonRunner**.
 
 ---
 

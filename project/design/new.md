@@ -220,7 +220,7 @@ Use `src/shared/morse.ts` encode maps; do **not** invent per-letter tables in th
 | `src/client/systems/TouchInput.ts` | Key down/up events; WPM-relative threshold API |
 | `src/client/systems/AudioEngine.ts` | Ensure sidetone + scheduled play work; envelope if easy |
 | `src/shared/morse.ts` | Use encode/timing; add small helpers if needed (`encodeChar`, `isPrefix`) |
-| `src/client/systems/WaveformViz.ts` | **Do not require** for this UX; leave unused or remove from splash only |
+| `src/client/systems/WaveformViz.ts` | **Removed** — listen UX is `MorseSoundBars` |
 | `src/client/game.tsx` | Out of scope unless extracting shared hooks |
 | Server | No change required for MVP |
 
@@ -319,12 +319,8 @@ Keep audio schedule tokens/timeouts in refs; clear on replay/unmount.
 
 ## 14. Doc maintenance
 
-After shipping, update:
-
-- `project/agent/STATUS.md` — splash loop state  
-- `project/agent/DECISIONS.md` — default daily loop = this letter-by-letter after full listen (supersede pure whole-word single-buffer transmit if different)  
-- `project/design/ux.md` — point main daily UX here  
+Shipped: dual-timeline letter-by-letter loop in `DailyChallenge` (splash + expanded daily). Locks live in `project/agent/DECISIONS.md`.
 
 ---
 
-*End of brief. Implement in `splash.tsx` first; prefer DOM for word + ·/− over new engines.*
+*End of brief. Product truth is `src/client/components/DailyChallenge.tsx` + `MorseSoundBars`.*

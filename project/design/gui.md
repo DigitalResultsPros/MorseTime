@@ -4,7 +4,7 @@
 **Status:** Dual-timeline + two-lane display is the design target (2026-07-10).  
 **See also:** [ux.md](./ux.md) · [../agent/DECISIONS.md](../agent/DECISIONS.md)
 
-**Code reality check (2026-07-10):** `WaveformViz` is a **single** element list + one `currentTime` with CRT/sine-arc polish. Two-lane block display is **planned**, not shipped. Cosmetic items marked ✅ below refer to current single-lane viz only.
+**Code reality check (2026-07-15):** Shipped listen UI is **`MorseSoundBars`** (tone marks + live key bars), not a canvas waveform. `WaveformViz` was removed. Sections below that mention WaveformViz are **historical design notes**; product truth is dual-timeline splash + bars.
 
 ---
 

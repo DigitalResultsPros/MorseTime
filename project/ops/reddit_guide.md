@@ -1,7 +1,7 @@
 # Reddit moderator guide: MorseTime
 
 **Path:** `project/ops/reddit_guide.md`  
-**Verified against codebase:** 2026-07-10  
+**Verified against codebase:** 2026-07-15  
 **Locks:** [../agent/DECISIONS.md](../agent/DECISIONS.md)
 
 ---
@@ -10,7 +10,7 @@
 
 MorseTime is a Reddit game built with [Devvit](https://developers.reddit.com/docs) that teaches Morse through **sound and keying**. Players hear a daily transmission and send it back by tapping or holding Space/Enter (dit/dah by **duration**, not by which key).
 
-**Target loop (product):** listen → then transmit on a **separate timeline**. Code may still use a shared playhead until the dual-timeline work lands — see [../design/ux.md](../design/ux.md).
+**Loop:** listen → then transmit on a **separate timeline** (clock starts on **Start transmission**).
 
 ---
 
@@ -20,20 +20,20 @@ MorseTime is a Reddit game built with [Devvit](https://developers.reddit.com/doc
 
 MorseTime is a **Devvit Web** app (custom post + iframe):
 
-| Layer | Tech (actual) |
-|-------|----------------|
-| Backend | Node.js serverless, **Hono** REST-style routes (`src/server`) — **not tRPC** |
-| Frontend | React 19 + Tailwind CSS 4 inside a Reddit iframe |
-| Storage | Devvit **Redis** (daily word, progress keys) |
-| Audio | Web Audio API (oscillator keying) |
-| Viz | Canvas 2D (`WaveformViz`) |
+| Layer | Tech |
+|-------|------|
+| Backend | Node.js, **Hono** REST routes (`src/server`) |
+| Frontend | React 19 + Tailwind CSS 4 in a Reddit iframe |
+| Storage | Devvit **Redis** (daily word, leaderboard, progress, streaks) |
+| Audio | Web Audio API (`AudioEngine`) |
+| Listen UI | Tone bars (`MorseSoundBars`), not a shared waveform playhead |
 
 ### Post surfaces
 
 Configured in `devvit.json`:
 
 1. **Inline** — `splash.html` (`inline: true`) in the feed  
-2. **Expanded** — `game.html` via expanded mode  
+2. **Expanded** — `game.html` via expanded mode (Practice hub + lessons)
 
 Posts are created with `reddit.submitCustomPost()` (`src/server/core/post.ts`), title **“MorseTime - Daily Frequency”**.
 
@@ -41,95 +41,42 @@ Posts are created with `reddit.submitCustomPost()` (`src/server/core/post.ts`), 
 
 - Word list + **date-based hash** in `src/server/routes/daily.ts` (`selectDailyWord`)
 - Served by **`GET /api/daily-frequency`**
-- Cached in Redis as `daily:YYYY-MM-DD`
-- Same calendar day → same word for everyone
-- **No scheduled nightly job** is registered in `devvit.json` right now; word is created on first fetch for the day if missing
+- Cached in Redis (versioned key; same calendar day → same word for everyone)
+- **Scheduler** (`devvit.json` → `scheduler.tasks.daily-frequency-post`, cron `0 0 * * *`) can auto-post the daily challenge
+- Playtest default subreddit: **`morsetime_dev`**
 
-Playtest default subreddit: **`morsetime_dev`** (`devvit.json` → `dev.subreddit`).
+### Leaderboard & social
 
----
+- Board: fastest correct transmit times for the day (ms → WPM)
+- Client panel + optional sticky board comment (mod menu: **Pin / refresh leaderboard**)
+- Players can **share** a score as a comment under the post
+- Streaks are per-user in Redis
 
-## Moderator workflow
+### Practice hub (expanded)
 
-### Create a game post
-
-**Only moderators** see these menu items (`forUserType: "moderator"` in `devvit.json`):
-
-| Menu label | Endpoint | Behavior |
-|------------|----------|----------|
-| **Post Today's Frequency** | `/internal/menu/post-frequency` | Creates a new custom post and navigates to it |
-| **View Subreddit Stats** | `/internal/menu/view-stats` | **Placeholder** — toast “Stats coming soon!” |
-
-Steps:
-
-1. Open the subreddit where the app is installed  
-2. Open the mod / app menu  
-3. Choose **Post Today's Frequency**  
-4. You’re taken to the new post  
-
-### Install behavior
-
-`onAppInstall` (`src/server/routes/triggers.ts`) creates the **first** custom post automatically. It does **not** schedule daily posts.
-
-### How many posts?
-
-**Each menu action creates a new post.** Old posts remain. There is no auto-delete or archive.
-
-Implications:
-
-- Multiple “MorseTime - Daily Frequency” posts can accumulate  
-- Each post is its own custom-post instance  
-- Daily **word** is still date-based globally via Redis key `daily:date`, not “per post word”  
-
-Mods may manually remove old posts if the subreddit should stay clean.
+- Intro lessons with sequential Pass unlock (10 groups @ ≥90% letter accuracy)
+- Lesson progress is **per-user** Redis (not post-scoped)
+- Lesson times do **not** rank on the daily Frequency board
 
 ---
 
-## User experience (current vs intended)
+## Mod menu
 
-| | Current code (approx.) | Intended (locked) |
-|--|------------------------|-------------------|
-| Feed | Splash: “Today’s Frequency”, may show **plaintext word** | Hide word until result |
-| Play | Play target; keying often tied to playback clock | **Listen** then **transmit** on separate timeline |
-| Input | Canvas + Space/Enter hold → dit/dah by duration (~150ms threshold) | Same, WPM-relative threshold |
-| Expanded | Menu: lesson / practice / daily | Same modes; fix lesson encode path |
-| Streak / WPM | Shown in UI; not solid per-user daily streak yet | Durable per-user stats in Redis |
-| Progress | Redis under keys using **`postId`** | Should be per **user** |
+| Action | Where | Endpoint |
+|--------|--------|----------|
+| Post Today's Frequency | Subreddit | `/internal/menu/post-frequency` |
+| Pin / refresh leaderboard | Post | `/internal/menu/pin-leaderboard` |
+| View Subreddit Stats | Subreddit | `/internal/menu/view-stats` |
 
 ---
 
-## Progress & identity (important)
+## Local / deploy commands
 
-`GET /api/lesson-state` and `POST /api/progress` use Redis keys scoped with **`context.postId`**, not username. That means progress is **not correctly multi-user** yet. Do not promise personal progression to the community until this is fixed.
-
----
-
-## Technical reference for mods
-
-| Component | Detail |
-|-----------|--------|
-| Package name | `morsetime` |
-| Devvit config | `devvit.json` |
-| API surface | `/api/*` (daily, progress, legacy counter), `/internal/menu/*`, `/internal/triggers/*` |
-| Hosting | Reddit Devvit serverless |
-| Docs index | [../README.md](../README.md) |
+See root [README.md](../../README.md): `npm run dev`, `build`, `test`, `deploy`, `launch`.
 
 ---
 
-## Scope notes (hackathon)
+## Permissions (`devvit.json`)
 
-| Item | Status |
-|------|--------|
-| **Phaser** | Out |
-| **Multilingual Morse** (different alphabets / per-locale words) | Out — would break one fair daily board |
-| **UI language toggle** | Stretch — chrome only; same daily word for all |
-| **Leaderboard** | Planned: correct sequence + **transmit speed (WPM/time)**; not shipped |
-| **Choir** | Stretch after core play + async social |
-| **Full stats menu** | Placeholder toast only |
-
----
-
-## Help
-
-- [Devvit documentation](https://developers.reddit.com/docs)  
-- [r/Devvit](https://www.reddit.com/r/Devvit)  
+- **Redis** enabled  
+- **Reddit** API with moderator scope; `asUser: SUBMIT_COMMENT` for share / board comments  

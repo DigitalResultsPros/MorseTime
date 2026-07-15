@@ -4,29 +4,31 @@ Learn Morse code by touch and sound. One daily transmission on Reddit.
 
 **Built for:** Reddit's "Games with a Hook" Hackathon (2026)  
 **Platform:** Devvit Web  
-**Stack:** React 19, Tailwind CSS 4, Vite, Hono, Web Audio API, Canvas 2D  
+**Stack:** React 19, Tailwind CSS 4, Vite, Hono, Web Audio API  
 **Playtest subreddit:** `morsetime_dev` (see `devvit.json`)
 
 **Docs:** [project/README.md](./project/README.md) · **Locks:** [project/agent/DECISIONS.md](./project/agent/DECISIONS.md) · **About copy:** [WEB_READ.md](./WEB_READ.md)
 
-## What it does (shipped / in progress)
+## What it does
 
 | Feature | State |
 |---------|--------|
-| Daily frequency word (date-hashed, Redis-cached) | Implemented |
-| Inline splash + expanded game entrypoints | Implemented |
-| Splash daily loop (listen → Start → letter key → ms) | Implemented — see `project/design/new.md` |
-| Web Audio keying + touch/keyboard dit/dah | Implemented (WPM-relative threshold on splash) |
-| Canvas waveform viz | Removed (unused); MorseSoundBars is the listen UX |
-| Koch curriculum data (10 lessons) | Data + partial client |
-| Progress API (Redis) | Implemented but keyed by `postId` (not per-user yet) |
-| Mod menu: post frequency, stats placeholder | Implemented |
-| Leaderboard / share | Not implemented — **intent:** same daily Morse, correct first, rank by transmit time → WPM |
-| Choir | Not implemented — **stretch** after P0 social |
-| UI language toggle | Not implemented — **stretch** (UI strings only; not multilingual Morse) |
-| Phaser | **Not used** (locked out) |
+| Daily frequency word (date-hashed, Redis-cached) | Shipped |
+| Inline splash + expanded game entrypoints | Shipped |
+| Daily loop: listen → Start → letter-by-letter key → ms | Shipped |
+| Web Audio keying + touch / Space·Enter (dit/dah by hold) | Shipped |
+| Listen UX (`MorseSoundBars`) + Morse cheat sheet | Shipped |
+| Daily leaderboard (correct first, rank by transmit ms → WPM) | Shipped |
+| Daily streak + anti-cheat token on board submit | Shipped |
+| Share score as a Reddit comment | Shipped |
+| Practice hub + intro lessons (Koch-style groups, Pass gate) | Shipped |
+| Per-user lesson progress (Redis) | Shipped |
+| Nightly daily-frequency post scheduler | Shipped (`devvit.json`) |
+| Mod menu: post frequency, pin board, stats | Shipped |
+| Choir / UI language toggle | Stretch (not shipped) |
+| Phaser | Not used |
 
-**Target gameplay (locked):** listen to target → transmit on a **separate timeline** (see [project/design/ux.md](./project/design/ux.md)).
+**Gameplay model:** listen to the target, then transmit on a **separate timeline** (your clock starts when you press Start).
 
 ## Architecture
 
@@ -34,23 +36,24 @@ Learn Morse code by touch and sound. One daily transmission on Reddit.
 src/
 ├── client/                 # React (→ dist/client)
 │   ├── splash.html/.tsx    # Inline feed
-│   ├── game.html/.tsx      # Expanded
+│   ├── game.html/.tsx      # Expanded practice hub
+│   ├── components/         # DailyChallenge, TrainingHub, leaderboard, …
 │   └── systems/            # AudioEngine, TouchInput
 ├── server/                 # Hono (→ dist/server)
 │   ├── index.ts
-│   ├── routes/             # api, daily, progress, menu, triggers, forms
-│   └── core/post.ts
+│   ├── routes/             # daily, progress, leaderboard, share, menu, …
+│   └── core/               # post, dailyBoard, boardComment
 ├── shared/                 # morse, wpm, curriculum, api types
-└── tests/                  # Vitest unit tests (codec, touch, audio, wpm)
+└── tests/                  # Vitest unit tests
 ```
 
 ## Key technical decisions
 
-- **No Phaser** — React + Canvas 2D + Web Audio
+- **No Phaser** — React + Web Audio + purpose-built Morse UI
 - **Audio scheduling** via `AudioContext.currentTime`
-- **Farnsworth timing** helpers in `src/shared/morse.ts` (wire fully into playback as needed)
-- **Daily word** — generated/cached on `GET /api/daily-frequency` (no nightly scheduler in `devvit.json` currently)
-- **Keyboard** — Space or Enter hold = keyer; duration classifies dit/dah (not “Space=dit, Enter=dah”)
+- **Farnsworth-friendly timing** helpers in `src/shared/morse.ts`
+- **Daily word** — date-hashed, Redis-cached; optional nightly post via scheduler
+- **Keyboard** — Space or Enter hold = keyer; duration classifies dit vs dah (WPM-relative threshold)
 
 ## Commands
 
@@ -67,8 +70,8 @@ src/
 
 | Criterion | Direction |
 |-----------|-----------|
-| Daily return | Daily frequency + streak (streak durability still P0) |
-| Collective joy | Leaderboard / share first; **choir = stretch** |
+| Daily return | Shared daily Frequency + streak |
+| Collective joy | Leaderboard, sticky board comment, share |
 | Polish | Dual-timeline play + readable Morse display |
 | Not generic | Audio-first Morse skill game |
 | Phaser award | N/A |

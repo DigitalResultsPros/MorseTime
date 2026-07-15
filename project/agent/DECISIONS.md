@@ -1,6 +1,6 @@
 # Decisions (locked)
 
-Last updated: 2026-07-10
+Last updated: 2026-07-15
 
 ## Hackathon / product
 
@@ -28,16 +28,16 @@ Last updated: 2026-07-10
 
 **Implication:** Do not turn the Reddit expanded view into a full LMS. Prefer a **game hub with a few extras** + optional “Continue on web” for power features. Shared core (morse codec, keying loop, curriculum data, daily word) can power both; **feature completeness lives on the site**.
 
-## Leaderboard (locked intent — not implemented yet)
+## Leaderboard (shipped)
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Daily challenge | **Same Morse target for everyone** that calendar day | Fair race; date-hashed word already works this way |
-| Eligibility | **Correct sequence** (or clear accuracy threshold) first | Speed without correctness is not skill |
-| Rank metric | **Transmit time → effective WPM** (from user timeline duration) | Match `LeaderboardEntry.wpm` intent; use real duration, not splash’s rough formula |
+| Daily challenge | **Same Morse target for everyone** that calendar day | Fair race; date-hashed word |
+| Eligibility | **Correct full-word keying** before score counts | Speed without correctness is not skill |
+| Rank metric | **Transmit time (ms) → effective WPM** | Real duration from Start → complete |
 | UI locale | **Does not affect ranking** | Chrome only |
-| Per-language / per-alphabet boards | **No** for default daily | Would split community; only if content multilingual returns later |
-| Code state | Types in `src/shared/api.ts` only; **no route/UI yet** | Implement after dual-timeline scoring works |
+| Per-language / per-alphabet boards | **No** for default daily | Would split community |
+| Code state | Routes + Redis board + `LeaderboardPanel` + share + sticky comment | See `src/server/routes/leaderboard.ts`, `share.ts` |
 
 ## Gameplay & display (locked 2026-07-10)
 
@@ -47,8 +47,8 @@ Last updated: 2026-07-10
 | Default daily loop | **Listen → Start → letter-by-letter transmit → ms result** | See [../design/new.md](../design/new.md); full-word buffer remains optional later |
 | Rhythm-sync mode | **Not default**; optional hard mode only later | Absolute ms alignment is a different game |
 | Letter-by-letter entry | **Default on splash** (main page) | Whole-word single buffer optional later; lessons can share matcher |
-| Server API style | **Hono REST routes** (not tRPC) | Matches `src/server`; AGENTS.md corrected 2026-07-10 |
-| Docs layout | **`project/{design,ops,research,agent}/`** | Root keeps `README.md` + `AGENTS.md` only |
+| Server API style | **Hono REST routes** (not tRPC) | Matches `src/server` |
+| Docs layout | **`project/{design,ops,agent}/`** | Root: `README.md`, `WEB_READ.md`, `LICENSE` |
 | Input phases | **Input disabled during listen; enabled only in transmit** | No keying during target playback |
 | Scoring (P0) | **Sequence match** (dit/dah list or per-char) | Correctness first |
 | Scoring (P1 / board) | **Transmit duration → effective WPM** among correct runs | Daily leaderboard metric; see Leaderboard section |
@@ -85,7 +85,7 @@ loading → idle → listen → ready → transmit → result
 - Phaser / three.js / other game engines
 - **Multilingual Morse content** (extra alphabets, locale-specific daily words that desync the board)
 - 40-lesson curriculum depth over polish
-- Standalone web SEO PWA or native mobile (separate tracks; `plans/` cleaned)
+- Standalone web SEO PWA or native mobile (separate tracks)
 - Blocking ship on choir or UI i18n
 
 ## Training hub / expanded surface (locked 2026-07-10)
