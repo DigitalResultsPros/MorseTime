@@ -17,7 +17,7 @@ Learn Morse code by touch and sound. One daily transmission on Reddit.
 | Inline splash + expanded game entrypoints | Implemented |
 | Splash daily loop (listen → Start → letter key → ms) | Implemented — see `project/design/new.md` |
 | Web Audio keying + touch/keyboard dit/dah | Implemented (WPM-relative threshold on splash) |
-| Canvas waveform viz | Present in codebase; not primary splash UX |
+| Canvas waveform viz | Removed (unused); MorseSoundBars is the listen UX |
 | Koch curriculum data (10 lessons) | Data + partial client |
 | Progress API (Redis) | Implemented but keyed by `postId` (not per-user yet) |
 | Mod menu: post frequency, stats placeholder | Implemented |
@@ -35,7 +35,7 @@ src/
 ├── client/                 # React (→ dist/client)
 │   ├── splash.html/.tsx    # Inline feed
 │   ├── game.html/.tsx      # Expanded
-│   └── systems/            # AudioEngine, TouchInput, WaveformViz, Progression
+│   └── systems/            # AudioEngine, TouchInput
 ├── server/                 # Hono (→ dist/server)
 │   ├── index.ts
 │   ├── routes/             # api, daily, progress, menu, triggers, forms

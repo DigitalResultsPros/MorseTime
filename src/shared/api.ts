@@ -1,23 +1,3 @@
-// Legacy counter types (used by existing template hook)
-export type InitResponse = {
-  type: 'init';
-  postId: string;
-  count: number;
-  username: string;
-};
-
-export type IncrementResponse = {
-  type: 'increment';
-  postId: string;
-  count: number;
-};
-
-export type DecrementResponse = {
-  type: 'decrement';
-  postId: string;
-  count: number;
-};
-
 // Morse game types
 export type DailyFrequency = {
   word: string;
