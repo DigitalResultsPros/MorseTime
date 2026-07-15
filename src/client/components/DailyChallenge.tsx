@@ -914,7 +914,7 @@ export const DailyChallenge = ({
         {/* ── RESULT: title · time · WPM · rank / next group ── */}
         {dailyWord && isResult && (
           <div
-            className={`w-full max-w-sm shrink-0 rounded-2xl border border-green-500/25 bg-gradient-to-b from-green-500/15 to-slate-900/40 px-5 py-4 flex flex-col items-center gap-3 ${
+            className={`w-full max-w-sm shrink-0 rounded-2xl border border-green-500/25 bg-linear-to-b from-green-500/15 to-slate-900/40 px-5 py-4 flex flex-col items-center gap-3 ${
               celebrate && !reduceMotion ? 'mt-celebrate-banner' : ''
             }`}
             role="status"
@@ -973,7 +973,7 @@ export const DailyChallenge = ({
               </div>
             )}
 
-            <div className="mt-0.5 w-full max-w-[12rem] flex flex-col gap-2">
+            <div className="mt-0.5 w-full max-w-48 flex flex-col gap-2">
               {isPractice && onPracticeNext ? (
                 <button
                   type="button"
@@ -1063,7 +1063,7 @@ export const DailyChallenge = ({
               aria-live="polite"
             >
               <p
-                className={`font-mono font-bold tracking-[0.35em] min-h-[2.25rem] relative z-10 ${
+                className={`font-mono font-bold tracking-[0.35em] min-h-9 relative z-10 ${
                   isExpanded ? 'text-4xl' : 'text-3xl sm:text-4xl'
                 }`}
               >
@@ -1119,7 +1119,7 @@ export const DailyChallenge = ({
                 aria-hidden
               >
                 <span
-                  className={`font-mono text-6xl sm:text-7xl font-bold leading-none min-h-[3.5rem] select-none ${
+                  className={`font-mono text-6xl sm:text-7xl font-bold leading-none min-h-14 select-none ${
                     holding
                       ? holdBarPct >= 50
                         ? 'text-orange-400 opacity-100 drop-shadow-[0_0_14px_rgba(251,146,60,0.6)]'
@@ -1136,7 +1136,7 @@ export const DailyChallenge = ({
             {/* Live ·/− input display — always reserved in transmit */}
             {phase === 'transmit' && (
               <div
-                className={`w-full max-w-sm text-center shrink-0 min-h-[2rem] rounded-lg px-2 py-1 transition-colors duration-150 ${
+                className={`w-full max-w-sm text-center shrink-0 min-h-8 rounded-lg px-2 py-1 transition-colors duration-150 ${
                   errorFlash
                     ? 'bg-red-500/20'
                     : liveGlyphs || holding
@@ -1145,7 +1145,7 @@ export const DailyChallenge = ({
                 }`}
               >
                 <p
-                  className={`font-mono font-semibold tracking-[0.4em] min-h-[1.5rem] ${
+                  className={`font-mono font-semibold tracking-[0.4em] min-h-6 ${
                     errorFlash
                       ? 'text-red-300 text-xl'
                       : liveGlyphs
@@ -1256,7 +1256,7 @@ export const DailyChallenge = ({
                   <button
                     ref={keyPadRef}
                     type="button"
-                    className="w-full max-w-sm shrink rounded-2xl border-2 border-orange-500/50 bg-slate-800 active:bg-slate-700 active:border-orange-400 text-slate-100 font-semibold select-none min-h-[4rem]"
+                    className="w-full max-w-sm shrink rounded-2xl border-2 border-orange-500/50 bg-slate-800 active:bg-slate-700 active:border-orange-400 text-slate-100 font-semibold select-none min-h-16"
                     style={{ touchAction: 'none' }}
                     aria-label="Hold to key Morse"
                   >
