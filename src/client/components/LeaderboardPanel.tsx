@@ -45,6 +45,7 @@ export const LeaderboardPanel = ({
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [me, setMe] = useState<LeaderboardResponse['me']>(null);
   const [date, setDate] = useState<string>('');
+  const [participants, setParticipants] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [retryTick, setRetryTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -61,6 +62,11 @@ export const LeaderboardPanel = ({
         setEntries(data.entries);
         setMe(data.me);
         setDate(data.date);
+        setParticipants(
+          typeof data.participants === 'number' && data.participants > 0
+            ? data.participants
+            : 0
+        );
         setStatus('ready');
       } catch (err) {
         console.error(err);
@@ -76,6 +82,11 @@ export const LeaderboardPanel = ({
     setStatus('loading');
     setRetryTick((t) => t + 1);
   }, []);
+
+  const operatorsLabel =
+    participants > 0
+      ? `${participants} operator${participants === 1 ? '' : 's'} copied today`
+      : null;
 
   return (
     <section
@@ -177,6 +188,15 @@ export const LeaderboardPanel = ({
       {status === 'ready' && me && me.rank > shownLimit && (
         <p className="mt-0.5 text-[10px] text-slate-500 font-mono text-center">
           You · #{me.rank} · {me.elapsedMs} ms
+        </p>
+      )}
+
+      {status === 'ready' && operatorsLabel && (
+        <p
+          className="mt-0.5 text-[10px] text-slate-500 text-center tabular-nums"
+          title="Distinct operators who submitted a time today"
+        >
+          📡 {operatorsLabel}
         </p>
       )}
     </section>
