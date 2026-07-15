@@ -1078,6 +1078,7 @@ export const DailyChallenge = ({
                   if (!shown) cls += ' opacity-0';
                   else if (isBoundary) cls += ' text-orange-200 mt-letter-boundary';
                   else if (isCurrent) cls += ' text-orange-300 underline underline-offset-4';
+                  else if (isDone && letterFlash && i === letterIndex - 1) cls += ' text-green-400 transition-colors duration-75';
                   else if (isDone) cls += ' text-slate-200';
                   else if (isFuture) cls += ' text-slate-500 opacity-60';
                   else cls += ' text-white';
@@ -1139,11 +1140,9 @@ export const DailyChallenge = ({
                 className={`w-full max-w-sm text-center shrink-0 min-h-[2rem] rounded-lg px-2 py-1 transition-colors duration-150 ${
                   errorFlash
                     ? 'bg-red-500/20'
-                    : letterFlash
-                      ? 'bg-green-500/10'
-                      : liveGlyphs || holding
-                        ? 'bg-slate-800/70'
-                        : 'bg-transparent'
+                    : liveGlyphs || holding
+                      ? 'bg-slate-800/70'
+                      : 'bg-transparent'
                 }`}
               >
                 <p
@@ -1152,10 +1151,10 @@ export const DailyChallenge = ({
                       ? 'text-red-300 text-xl'
                       : liveGlyphs
                         ? 'text-orange-100 text-xl'
-                        : 'text-slate-600 text-sm'
+                        : 'text-transparent text-sm'
                   }`}
                 >
-                  {liveGlyphs || (holding ? '' : '· −')}
+                  {liveGlyphs || ''}
                 </p>
               </div>
             )}
