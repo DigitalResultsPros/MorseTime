@@ -27,11 +27,8 @@ import type { DailyFrequency, LeaderboardEntry, LeaderboardSubmitResponse } from
 import { transmitWpm } from '../../shared/wpm';
 import { navigateTo, showToast } from '@devvit/web/client';
 import { readNumber, writeNumber, writeFlag } from '../lib/storage';
-import {
-  MorseSoundBars,
-  buildToneMarks,
-  type ToneMark,
-} from './MorseSoundBars';
+import { MorseSoundBars } from './MorseSoundBars';
+import { buildToneMarks, type ToneMark } from './MorseSoundBarsTypes';
 
 const audioEngine = new AudioEngine();
 const touchInput = new TouchInput(() => {
@@ -316,23 +313,25 @@ export const DailyChallenge = ({
 
   useEffect(() => {
     if (practiceWord) {
-      const word = practiceWord.trim();
-      const letters = lettersOnly(word);
-      if (!letters) {
-        setLoadError('Empty practice group');
-        setPhaseBoth('error');
-        return;
-      }
-      setDailyWord({
-        word,
-        morse: '',
-        charWpm: INITIAL_WPM,
-        effectiveWpm: INITIAL_WPM,
+      queueMicrotask(() => {
+        const word = practiceWord.trim();
+        const letters = lettersOnly(word);
+        if (!letters) {
+          setLoadError('Empty practice group');
+          setPhaseBoth('error');
+          return;
+        }
+        setDailyWord({
+          word,
+          morse: '',
+          charWpm: INITIAL_WPM,
+          effectiveWpm: INITIAL_WPM,
+        });
+        wordLettersRef.current = letters;
+        touchInput.setDitThresholdMs(ditDahThresholdMs(INITIAL_WPM));
+        setLoadError(null);
+        setPhaseBoth('idle');
       });
-      wordLettersRef.current = letters;
-      touchInput.setDitThresholdMs(ditDahThresholdMs(INITIAL_WPM));
-      setLoadError(null);
-      setPhaseBoth('idle');
       return;
     }
 

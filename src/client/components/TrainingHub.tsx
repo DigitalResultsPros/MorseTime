@@ -99,7 +99,9 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
   }, []);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => {
+      void load();
+    });
   }, [load]);
 
   const progress = state ?? defaultState();
