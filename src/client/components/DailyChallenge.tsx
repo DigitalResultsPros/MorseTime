@@ -138,12 +138,6 @@ export type DailyChallengeProps = {
   onExpand?: (event: MouseEvent) => void;
   /** Expand link label (Reddit in-app practice, not the full website). */
   expandLabel?: string;
-  /**
-   * External full-product site (e.g. https://morsetime.com).
-   * Opens via Devvit `navigateTo` (user gets a confirm dialog).
-   */
-  webTrainingUrl?: string;
-  webTrainingLabel?: string;
   /** Extra chrome under the challenge (e.g. leaderboard). */
   below?: ReactNode;
   footer?: ReactNode;
@@ -175,8 +169,6 @@ export const DailyChallenge = ({
   onResult,
   onExpand,
   expandLabel = 'Practice →',
-  webTrainingUrl,
-  webTrainingLabel = 'Full training on the web →',
   below,
   footer,
   cheatSheet,
@@ -1289,26 +1281,15 @@ export const DailyChallenge = ({
           </>
         )}
 
-        {(variant === 'inline' && onExpand && !isResult) || webTrainingUrl ? (
+        {variant === 'inline' && onExpand && !isResult ? (
           <div className="flex flex-row flex-wrap items-center justify-center gap-3 shrink-0 mt-1">
-            {variant === 'inline' && onExpand && !isResult && (
-              <button
-                type="button"
-                className="text-sm text-slate-500 hover:text-white transition-colors shrink-0"
-                onClick={handleExpand}
-              >
-                {expandLabel}
-              </button>
-            )}
-            {webTrainingUrl && (
-              <button
-                type="button"
-                className="text-sm text-orange-400/90 hover:text-orange-300 transition-colors shrink-0"
-                onClick={() => navigateTo(webTrainingUrl)}
-              >
-                {webTrainingLabel}
-              </button>
-            )}
+            <button
+              type="button"
+              className="text-sm text-slate-500 hover:text-white transition-colors shrink-0"
+              onClick={handleExpand}
+            >
+              {expandLabel}
+            </button>
             {cheatSheet && <div className="flex-1 min-w-0">{cheatSheet}</div>}
           </div>
         ) : null}

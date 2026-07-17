@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { navigateTo } from '@devvit/web/client';
 import {
   CURRICULUM,
   FREE_LESSON_STEPS,
   hasCompletedIntro,
 } from '../../shared/curriculum';
 import type { LessonState } from '../../shared/api';
-import { MORSETIME_WEB_TRAINING_LABEL, MORSETIME_WEB_URL } from '../site';
 import { MorseCheatSheet } from './MorseCheatSheet';
 
 export type TrainingHubProps = {
@@ -170,18 +168,11 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
                 You know <span className="font-mono text-orange-200">K M R S U</span>
               </p>
               <p className="mt-1 text-[11px] text-slate-500">
-                Drill these letters here, or continue the full path on the web.
+                Drill these letters here to keep sharp.
               </p>
               <button
                 type="button"
                 className="mt-3 w-full bg-orange-600 hover:bg-orange-500 text-white px-4 py-2.5 rounded-full font-bold text-sm min-h-10"
-                onClick={() => navigateTo(MORSETIME_WEB_URL)}
-              >
-                {MORSETIME_WEB_TRAINING_LABEL}
-              </button>
-              <button
-                type="button"
-                className="mt-2 w-full text-sm text-slate-400 hover:text-white transition-colors py-1"
                 onClick={() => onOpenLesson(FREE_LESSON_STEPS)}
               >
                 Drill free letters
@@ -286,21 +277,9 @@ export const TrainingHub = ({ onOpenDaily, onOpenLesson, footer }: TrainingHubPr
               className="w-full text-left rounded-xl border border-slate-700/80 bg-slate-950/50 px-3 py-2 hover:border-slate-500 transition-colors"
               onClick={onOpenDaily}
             >
-              <span className="text-sm font-medium text-slate-100">Today&apos;s Frequency</span>
+              <span className="text-sm font-medium text-slate-100">Today's Frequency</span>
               <span className="block text-[11px] text-slate-500 mt-0.5">
-                Daily race · same word &amp; leaderboard as the feed
-              </span>
-            </button>
-            <button
-              type="button"
-              className="w-full text-left rounded-xl border border-slate-700/80 bg-slate-950/50 px-3 py-2 hover:border-orange-500/40 transition-colors"
-              onClick={() => navigateTo(MORSETIME_WEB_URL)}
-            >
-              <span className="text-sm font-medium text-orange-300">
-                {MORSETIME_WEB_TRAINING_LABEL}
-              </span>
-              <span className="block text-[11px] text-slate-500 mt-0.5">
-                Full path &amp; more on morsetime.com
+                Daily race · same word & leaderboard as the feed
               </span>
             </button>
           </section>

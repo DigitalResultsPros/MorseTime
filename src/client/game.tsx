@@ -7,7 +7,6 @@ import { DailyChallenge } from './components/DailyChallenge';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { TrainingHub } from './components/TrainingHub';
 import { LessonRunner } from './components/LessonRunner';
-import { MORSETIME_WEB_URL } from './site';
 
 type View =
   | { name: 'hub' }
@@ -16,14 +15,6 @@ type View =
 
 const footer = (
   <>
-    <button
-      type="button"
-      className="cursor-pointer hover:text-orange-400/80 transition-colors"
-      onClick={() => navigateTo(MORSETIME_WEB_URL)}
-    >
-      morsetime.com
-    </button>
-    <span className="text-slate-700">|</span>
     <button
       type="button"
       className="cursor-pointer hover:text-slate-400 transition-colors"
